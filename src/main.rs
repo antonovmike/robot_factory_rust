@@ -4,7 +4,7 @@ use axum::{routing::post, Json, Router};
 use axum_sqlite::*;
 use regex::Regex;
 use rusqlite::Connection;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::path::Path;
 use validator::Validate;
@@ -22,7 +22,7 @@ struct Order {
     robot_serial: String,
 }
 
-#[derive(Debug, Deserialize, Validate)]
+#[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Robot {
     #[validate(length(min = 1, max = 5))]
     serial: String,
@@ -108,27 +108,40 @@ fn validate_model_version(value: &str) -> Result<(), ValidationError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum_test_helper::TestClient;
+    use axum::http::StatusCode;
 
     #[tokio::test]
     async fn test_create_robot_valid() {
-        unimplemented!()
+        let app = Router::new().route("/robots/create", post(create_robot));
+        let client = TestClient::new(app);
+
+        let robot = Robot {
+            serial: "R1".to_string(),
+            model: "M1".to_string(),
+            version: "V1".to_string(),
+            created: "2023-10-04".to_string(),
+        };
+
+        let res = client.post("/robots/create").json(&robot).send().await;
+        assert_eq!(res.status(), StatusCode::CREATED);
     }
 
-    #[test]
+    #[tokio::test]
     #[should_panic]
-    fn test_create_robot_invalid_serial() {
+    async fn test_create_robot_invalid_serial() {
         unimplemented!()
     }
 
-    #[test]
+    #[tokio::test]
     #[should_panic]
-    fn test_create_robot_invalid_model() {
+    async fn test_create_robot_invalid_model() {
         unimplemented!()
     }
 
-    #[test]
+    #[tokio::test]
     #[ignore]
-    fn test_create_robot_ignore() {
+    async fn test_create_robot_ignore() {
         unimplemented!()
     }
 }
