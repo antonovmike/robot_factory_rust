@@ -1,15 +1,13 @@
-use axum::http::StatusCode;
-use axum::Server;
-use axum::{routing::post, Json, Router};
+use std::net::SocketAddr;
+use std::path::Path;
+
+use axum::{http::StatusCode, routing::{post, get}, Json, Router, Server};
 use axum_sqlite::*;
 use regex::Regex;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
-use std::path::Path;
-use validator::Validate;
+use validator::{Validate, ValidationError};
 use validator_derive::Validate;
-use validator::ValidationError;
 
 const DATABASE_NAME: &str = "db.sqlite3";
 
@@ -37,6 +35,7 @@ pub struct Robot {
 async fn main() {
     // Создаем маршрутизатор
     let app = Router::new()
+        .route("/robots/report", get(report_handler))
         .route("/robots/create", post(create_robot))
         .layer(Database::new(DATABASE_NAME).unwrap());
 
@@ -49,10 +48,14 @@ async fn main() {
         .unwrap();
 }
 
+async fn report_handler() {
+    todo!()
+}
+
 fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
     let conn = Connection::open(DATABASE_NAME)?;
     conn.execute(
-            "CREATE TABLE IF NOT EXISTS robots (
+        "CREATE TABLE IF NOT EXISTS robots (
                 id INTEGER PRIMARY KEY,
                 serial TEXT NOT NULL,
                 model TEXT NOT NULL,
@@ -100,16 +103,15 @@ fn validate_model_version(value: &str) -> Result<(), ValidationError> {
         println!("Invalid model version");
         return Err(ValidationError::new("invalid_model_version"));
     }
-    
+
     Ok(())
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum_test_helper::TestClient;
     use axum::http::StatusCode;
+    use axum_test_helper::TestClient;
 
     #[tokio::test]
     async fn test_create_robot_valid() {
