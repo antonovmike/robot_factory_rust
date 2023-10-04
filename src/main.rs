@@ -13,6 +13,15 @@ use validator::ValidationError;
 
 const DATABASE_NAME: &str = "db.sqlite3";
 
+struct Customer {
+    email: String,
+}
+
+struct Order {
+    customer: Customer,
+    robot_serial: String,
+}
+
 #[derive(Debug, Deserialize, Validate)]
 pub struct Robot {
     #[validate(length(min = 1, max = 5))]
@@ -33,7 +42,7 @@ async fn main() {
 
     // Запускаем сервер на локальном адресе
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
-    // hyper::Server::bind(&addr)
+
     Server::bind(&addr)
         .serve(app.into_make_service())
         .await
@@ -93,4 +102,33 @@ fn validate_model_version(value: &str) -> Result<(), ValidationError> {
     }
     
     Ok(())
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_create_robot_valid() {
+        unimplemented!()
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_create_robot_invalid_serial() {
+        unimplemented!()
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_create_robot_invalid_model() {
+        unimplemented!()
+    }
+
+    #[test]
+    #[ignore]
+    fn test_create_robot_ignore() {
+        unimplemented!()
+    }
 }
