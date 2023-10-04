@@ -128,15 +128,35 @@ mod tests {
     }
 
     #[tokio::test]
-    #[should_panic]
     async fn test_create_robot_invalid_serial() {
-        unimplemented!()
+        let app = Router::new().route("/robots/create", post(create_robot));
+        let client = TestClient::new(app);
+
+        let robot = Robot {
+            serial: "".to_string(),
+            model: "M1".to_string(),
+            version: "V1".to_string(),
+            created: "2023-10-04".to_string(),
+        };
+
+        let res = client.post("/robots/create").json(&robot).send().await;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]
-    #[should_panic]
     async fn test_create_robot_invalid_model() {
-        unimplemented!()
+        let app = Router::new().route("/robots/create", post(create_robot));
+        let client = TestClient::new(app);
+
+        let robot = Robot {
+            serial: "R1".to_string(),
+            model: "123".to_string(),
+            version: "V1".to_string(),
+            created: "2023-10-04".to_string(),
+        };
+
+        let res = client.post("/robots/create").json(&robot).send().await;
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]
