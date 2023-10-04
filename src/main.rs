@@ -11,6 +11,8 @@ use validator::Validate;
 use validator_derive::Validate;
 use validator::ValidationError;
 
+const DATABASE_NAME: &str = "db.sqlite3";
+
 #[derive(Debug, Deserialize, Validate)]
 pub struct Robot {
     #[validate(length(min = 1, max = 5))]
@@ -27,7 +29,7 @@ async fn main() {
     // Создаем маршрутизатор
     let app = Router::new()
         .route("/robots/create", post(create_robot))
-        .layer(Database::new("db.sqlite3").unwrap());
+        .layer(Database::new(DATABASE_NAME).unwrap());
 
     // Запускаем сервер на локальном адресе
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
@@ -36,6 +38,21 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
+    let conn = Connection::open(DATABASE_NAME)?;
+    conn.execute(
+            "CREATE TABLE IF NOT EXISTS robots (
+                id INTEGER PRIMARY KEY,
+                serial TEXT NOT NULL,
+                model TEXT NOT NULL,
+                version TEXT NOT NULL,
+                created TEXT NOT NULL
+            )",
+        [],
+    )?;
+    Ok(conn)
 }
 
 async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
@@ -49,16 +66,7 @@ async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
     // Создаем таблицу robots, если ее не существует
-    match conn.execute(
-        "CREATE TABLE IF NOT EXISTS robots (
-id INTEGER PRIMARY KEY,
-serial TEXT NOT NULL,
-model TEXT NOT NULL,
-version TEXT NOT NULL,
-created TEXT NOT NULL
-)",
-        [],
-    ) {
+    match setup_database() {
         Ok(_) => (),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
