@@ -2,22 +2,36 @@ use axum::http::StatusCode;
 use axum::Server;
 use axum::{routing::post, Json, Router};
 use axum_sqlite::*;
-use serde::Deserialize;
+use regex::Regex;
 use rusqlite::Connection;
+use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::Path;
 use validator::Validate;
 use validator_derive::Validate;
+use validator::ValidationError;
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct Robot {
     #[validate(length(min = 1, max = 5))]
     serial: String,
-    #[validate(length(min = 1, max = 2))]
+    #[validate(custom = "validate_model_version")]
     model: String,
-    #[validate(length(min = 1, max = 2))]
+    #[validate(custom = "validate_model_version")]
     version: String,
     created: String,
+}
+
+fn validate_model_version(value: &str) -> Result<(), ValidationError> {
+    // Создаем регулярное выражение для проверки строки
+    let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
+    // Проверяем, что строка соответствует регулярному выражению
+    if !re.is_match(value) {
+        // Возвращаем ошибку с кодом и сообщением
+        return Err(ValidationError::new("invalid_model_version"));
+    }
+    // Возвращаем успешный результат
+    Ok(())
 }
 
 #[tokio::main]
@@ -37,6 +51,14 @@ async fn main() {
 }
 
 async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
+    // Check if the "model" and "version" fields are valid
+    // if robot.validate().is_err() {
+    //     return Err(StatusCode::BAD_REQUEST);
+    // }
+    match robot.validate() {
+        Ok(_) => (),
+        Err(_) => return Err(StatusCode::BAD_REQUEST),
+    };
     // Проверяем данные на валидность
     if let Err(_) = robot.validate() {
         return Err(StatusCode::BAD_REQUEST);
@@ -54,7 +76,8 @@ serial TEXT NOT NULL,
 model TEXT NOT NULL,
 version TEXT NOT NULL,
 created TEXT NOT NULL
-)", []
+)",
+        [],
     ) {
         Ok(_) => (),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
