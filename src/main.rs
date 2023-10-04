@@ -22,18 +22,6 @@ pub struct Robot {
     created: String,
 }
 
-fn validate_model_version(value: &str) -> Result<(), ValidationError> {
-    // Создаем регулярное выражение для проверки строки
-    let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
-    // Проверяем, что строка соответствует регулярному выражению
-    if !re.is_match(value) {
-        // Возвращаем ошибку с кодом и сообщением
-        return Err(ValidationError::new("invalid_model_version"));
-    }
-    // Возвращаем успешный результат
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() {
     // Создаем маршрутизатор
@@ -51,14 +39,6 @@ async fn main() {
 }
 
 async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
-    // Check if the "model" and "version" fields are valid
-    // if robot.validate().is_err() {
-    //     return Err(StatusCode::BAD_REQUEST);
-    // }
-    match robot.validate() {
-        Ok(_) => (),
-        Err(_) => return Err(StatusCode::BAD_REQUEST),
-    };
     // Проверяем данные на валидность
     if let Err(_) = robot.validate() {
         return Err(StatusCode::BAD_REQUEST);
@@ -92,4 +72,17 @@ created TEXT NOT NULL
         Ok(_) => Ok(StatusCode::CREATED),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
+}
+
+fn validate_model_version(value: &str) -> Result<(), ValidationError> {
+    // Создаем регулярное выражение для проверки строки
+    let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
+    // Проверяем, что строка соответствует регулярному выражению
+    if !re.is_match(value) {
+        // Возвращаем ошибку с кодом и сообщением
+        println!("Invalid model version");
+        return Err(ValidationError::new("invalid_model_version"));
+    }
+    
+    Ok(())
 }
