@@ -66,7 +66,7 @@ fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
 
 async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     // Проверяем данные на валидность
-    if let Err(_) = robot.validate() {
+    if robot.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }
     // Открываем соединение с базой данных
@@ -157,11 +157,5 @@ mod tests {
 
         let res = client.post("/robots/create").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn test_create_robot_ignore() {
-        unimplemented!()
     }
 }
