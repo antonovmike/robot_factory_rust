@@ -13,19 +13,19 @@ use axum::{
 };
 use axum_sqlite::*;
 use http::header::CONTENT_TYPE;
-use regex::Regex;
 use rusqlite::{Connection, Result};
 use rust_xlsxwriter::Workbook;
-use serde::{Deserialize, Serialize};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
-use validator::{Validate, ValidationError};
-use validator_derive::Validate;
+use validator::Validate;
 
 #[cfg(test)]
 mod tests;
 
-const DATABASE_NAME: &str = "db.sqlite3";
+mod db;
+use db::*;
+
+// const DATABASE_NAME: &str = "db.sqlite3";
 const PATH_TO_XLSX: &str = "robots_report.xlsx";
 
 struct _Customer {
@@ -37,19 +37,11 @@ struct _Order {
     robot_serial: String,
 }
 
-#[derive(Debug, Deserialize, Serialize, Validate)]
-pub struct Robot {
-    #[validate(length(min = 1, max = 5))]
-    serial: String,
-    #[validate(custom = "validate_model_version")]
-    model: String,
-    #[validate(custom = "validate_model_version")]
-    version: String,
-    created: String,
-}
-
 #[tokio::main]
 async fn main() {
+    let stats = get_robots_by_date("2023-10-06 11:11:22");
+    
+    println!("{stats:?}");
     // Создаем маршрутизатор
     let app = Router::new()
         .route("/robots/report", get(report_handler))
@@ -167,20 +159,20 @@ async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
     Ok((headers, body))
 }
 
-fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
-    let conn = Connection::open(DATABASE_NAME)?;
-    conn.execute(
-        "CREATE TABLE IF NOT EXISTS robots (
-                id INTEGER PRIMARY KEY,
-                serial TEXT NOT NULL,
-                model TEXT NOT NULL,
-                version TEXT NOT NULL,
-                created TEXT NOT NULL
-            )",
-        [],
-    )?;
-    Ok(conn)
-}
+// fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
+//     let conn = Connection::open(DATABASE_NAME)?;
+//     conn.execute(
+//         "CREATE TABLE IF NOT EXISTS robots (
+//                 id INTEGER PRIMARY KEY,
+//                 serial TEXT NOT NULL,
+//                 model TEXT NOT NULL,
+//                 version TEXT NOT NULL,
+//                 created TEXT NOT NULL
+//             )",
+//         [],
+//     )?;
+//     Ok(conn)
+// }
 
 async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     // Проверяем данные на валидность
@@ -209,15 +201,15 @@ async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode
     }
 }
 
-fn validate_model_version(value: &str) -> Result<(), ValidationError> {
-    // Создаем регулярное выражение для проверки строки
-    let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
-    // Проверяем, что строка соответствует регулярному выражению
-    if !re.is_match(value) {
-        // Возвращаем ошибку с кодом и сообщением
-        println!("Invalid model version");
-        return Err(ValidationError::new("invalid_model_version"));
-    }
+// fn validate_model_version(value: &str) -> Result<(), ValidationError> {
+//     // Создаем регулярное выражение для проверки строки
+//     let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
+//     // Проверяем, что строка соответствует регулярному выражению
+//     if !re.is_match(value) {
+//         // Возвращаем ошибку с кодом и сообщением
+//         println!("Invalid model version");
+//         return Err(ValidationError::new("invalid_model_version"));
+//     }
 
-    Ok(())
-}
+//     Ok(())
+// }
