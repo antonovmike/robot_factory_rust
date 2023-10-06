@@ -70,7 +70,10 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
 
     let conn = rusqlite::Connection::open(DATABASE_NAME).unwrap();
     let mut stmt = conn
-        .prepare("SELECT model, version, COUNT(*) as count FROM robots GROUP BY model, version")
+        .prepare(
+            "SELECT model, version, COUNT(*) as count FROM robots 
+            WHERE created >= date('now', '-7 day') GROUP BY model, version"
+        )
         .unwrap();
     let robots_iter = stmt
         .query_map([], |row| {
@@ -84,11 +87,15 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
     let robots: Result<Vec<_>, _> = robots_iter.collect();
     let robots = robots.unwrap();
 
-    // Create a HashMap where the key is the first letter of the model and the value is a vector of tuples (model, version, count)
+    // Create a HashMap where the key is the first letter of the model
+    // and the value is a vector of tuples (model, version, count)
     let mut groups: HashMap<char, Vec<(String, String, i64)>> = HashMap::new();
     for (model, version, count) in robots {
         let first_char = model.chars().next().unwrap();
-        groups.entry(first_char).or_insert_with(Vec::new).push((model, version, count));
+        groups
+            .entry(first_char)
+            .or_insert_with(Vec::new)
+            .push((model, version, count));
     }
 
     // Create a new Excel file
@@ -104,8 +111,12 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
 
         // Write the data for each group to the sheet
         for (i, (model, version, count)) in value.iter().enumerate() {
-            sheet.write_string(i as u32 + 1, 0, model.to_string()).unwrap();
-            sheet.write_string(i as u32 + 1, 1, version.to_string()).unwrap();
+            sheet
+                .write_string(i as u32 + 1, 0, model.to_string())
+                .unwrap();
+            sheet
+                .write_string(i as u32 + 1, 1, version.to_string())
+                .unwrap();
             sheet.write_number(i as u32 + 1, 2, *count as f64).unwrap();
         }
     }
@@ -113,7 +124,6 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
     workbook.save(PATH_TO_XLSX).unwrap();
     Ok(())
 }
-
 
 async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
     match tokio::task::spawn(async { create_xlsx() }).await {
