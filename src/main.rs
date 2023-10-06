@@ -1,3 +1,4 @@
+use std::fs;
 use std::net::SocketAddr;
 use std::path::Path;
 
@@ -12,15 +13,16 @@ use axum::{
 use axum_sqlite::*;
 use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use regex::Regex;
-use rusqlite::Connection;
+use rusqlite::{Connection, Result};
+use rust_xlsxwriter::Workbook;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
-// use rust_xlsxwriter::{Format, Workbook, XlsxError};
 
 const DATABASE_NAME: &str = "db.sqlite3";
+const PATH_TO_XLSX: &str = "robots_report.xlsx";
 
 struct Customer {
     email: String,
@@ -59,10 +61,41 @@ async fn main() {
         .unwrap();
 }
 
-async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
-    let path = "test.xlsx";
+fn create_xlsx() -> Result<(), anyhow::Error> {
+    // Проверяем, существует ли файл по этому пути
+    // Если файл существует, то удаляем его
+    if fs::metadata(PATH_TO_XLSX).is_ok() {
+        fs::remove_file(PATH_TO_XLSX).unwrap();
+    }
 
-    let file = match File::open(path).await {
+    let mut workbook = Workbook::new();
+    let sheet = workbook.add_worksheet().set_name("TEST").unwrap();
+    sheet.write_string(0, 0, "Model")?;
+    sheet.write_string(0, 1, "Version")?;
+    sheet.write_string(0, 2, "Quantity per week")?;
+    workbook.save(PATH_TO_XLSX).unwrap();
+
+    Ok(())
+}
+
+async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
+    match tokio::task::spawn(async { create_xlsx() }).await {
+        Ok(Ok(())) => (),
+        Ok(Err(err)) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to create Excel file: {}", err),
+            ))
+        }
+        Err(err) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Failed to run blocking task: {}", err),
+            ))
+        }
+    }
+
+    let file = match File::open(PATH_TO_XLSX).await {
         Ok(file) => file,
         Err(err) => {
             return Err((
@@ -82,7 +115,7 @@ async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
     );
     headers.insert(
         CONTENT_DISPOSITION,
-        HeaderValue::from_static("attachment; filename=\"test.xlsx\""),
+        HeaderValue::from_static("attachment; filename=\"robots_report.xlsx\""),
     );
     Ok((headers, body))
 }
