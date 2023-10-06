@@ -68,13 +68,43 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
         fs::remove_file(PATH_TO_XLSX).unwrap();
     }
 
-    let mut workbook = Workbook::new();
-    let sheet = workbook.add_worksheet().set_name("TEST").unwrap();
-    sheet.write_string(0, 0, "Model")?;
-    sheet.write_string(0, 1, "Version")?;
-    sheet.write_string(0, 2, "Quantity per week")?;
-    workbook.save(PATH_TO_XLSX).unwrap();
+    // let mut workbook = Workbook::new();
+    // let sheet = workbook.add_worksheet().set_name("TEST").unwrap();
+    // sheet.write_string(0, 0, "Model")?;
+    // sheet.write_string(0, 1, "Version")?;
+    // sheet.write_string(0, 2, "Quantity per week")?;
+    // workbook.save(PATH_TO_XLSX).unwrap();
 
+    let conn = rusqlite::Connection::open(DATABASE_NAME).unwrap();
+    let mut stmt = conn
+        .prepare("SELECT model, version, COUNT(*) as count FROM robots GROUP BY model, version")
+        .unwrap();
+    let robots_iter = stmt
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?, // model
+                row.get::<_, String>(1)?, // version
+                row.get::<_, i64>(2)?,    // count
+            ))
+        })
+        .unwrap();
+    let robots: Result<Vec<_>, _> = robots_iter.collect();
+    let robots = robots.unwrap();
+
+    let mut workbook = Workbook::new();
+    for (i, (model, version, count)) in robots.iter().enumerate() {
+        let sheet_name = format!("{} {i}", &model[..1]);
+        let sheet = workbook.add_worksheet().set_name(sheet_name).unwrap();
+        sheet.write_string(0, 0, "Model").unwrap();
+        sheet.write_string(0, 1, "Version").unwrap();
+        sheet.write_string(0, 2, "Quantity per week").unwrap();
+        sheet
+            .write_string(i as u32 + 1, 0, model.to_string())
+            .unwrap();
+        sheet.write_string(i as u32 + 1, 1, version).unwrap();
+        sheet.write_number(i as u32 + 1, 2, *count as f64).unwrap();
+    }
+    workbook.save(PATH_TO_XLSX).unwrap();
     Ok(())
 }
 

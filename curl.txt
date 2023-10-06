@@ -1,0 +1,1 @@
+curl -X POST -H "Content-Type: application/json" -d '{"serial":"e8rjg","model":"M1","version":"E2","created":"2023-10-05 23:01:59"}' http://127.0.0.1:8000/robots/create
