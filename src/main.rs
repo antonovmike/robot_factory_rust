@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::net::SocketAddr;
 use std::path::Path;
@@ -62,18 +63,10 @@ async fn main() {
 }
 
 fn create_xlsx() -> Result<(), anyhow::Error> {
-    // Проверяем, существует ли файл по этому пути
-    // Если файл существует, то удаляем его
+    // Check if the file exists and delete it if it does
     if fs::metadata(PATH_TO_XLSX).is_ok() {
         fs::remove_file(PATH_TO_XLSX).unwrap();
     }
-
-    // let mut workbook = Workbook::new();
-    // let sheet = workbook.add_worksheet().set_name("TEST").unwrap();
-    // sheet.write_string(0, 0, "Model")?;
-    // sheet.write_string(0, 1, "Version")?;
-    // sheet.write_string(0, 2, "Quantity per week")?;
-    // workbook.save(PATH_TO_XLSX).unwrap();
 
     let conn = rusqlite::Connection::open(DATABASE_NAME).unwrap();
     let mut stmt = conn
@@ -91,22 +84,36 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
     let robots: Result<Vec<_>, _> = robots_iter.collect();
     let robots = robots.unwrap();
 
+    // Create a HashMap where the key is the first letter of the model and the value is a vector of tuples (model, version, count)
+    let mut groups: HashMap<char, Vec<(String, String, i64)>> = HashMap::new();
+    for (model, version, count) in robots {
+        let first_char = model.chars().next().unwrap();
+        groups.entry(first_char).or_insert_with(Vec::new).push((model, version, count));
+    }
+
+    // Create a new Excel file
     let mut workbook = Workbook::new();
-    for (i, (model, version, count)) in robots.iter().enumerate() {
-        let sheet_name = format!("{} {i}", &model[..1]);
+
+    // Iterate over the groups and create a new sheet for each group
+    for (key, value) in &groups {
+        let sheet_name = format!("{}", key);
         let sheet = workbook.add_worksheet().set_name(sheet_name).unwrap();
         sheet.write_string(0, 0, "Model").unwrap();
         sheet.write_string(0, 1, "Version").unwrap();
         sheet.write_string(0, 2, "Quantity per week").unwrap();
-        sheet
-            .write_string(i as u32 + 1, 0, model.to_string())
-            .unwrap();
-        sheet.write_string(i as u32 + 1, 1, version).unwrap();
-        sheet.write_number(i as u32 + 1, 2, *count as f64).unwrap();
+
+        // Write the data for each group to the sheet
+        for (i, (model, version, count)) in value.iter().enumerate() {
+            sheet.write_string(i as u32 + 1, 0, model.to_string()).unwrap();
+            sheet.write_string(i as u32 + 1, 1, version.to_string()).unwrap();
+            sheet.write_number(i as u32 + 1, 2, *count as f64).unwrap();
+        }
     }
+
     workbook.save(PATH_TO_XLSX).unwrap();
     Ok(())
 }
+
 
 async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
     match tokio::task::spawn(async { create_xlsx() }).await {
