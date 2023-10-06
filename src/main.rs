@@ -1,13 +1,24 @@
 use std::net::SocketAddr;
 use std::path::Path;
 
-use axum::{http::StatusCode, routing::{post, get}, Json, Router, Server};
+use axum::body::StreamBody;
+use axum::http::{self, HeaderMap, HeaderValue};
+use axum::{
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
+    Json, Router, Server,
+};
 use axum_sqlite::*;
+use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
 use regex::Regex;
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use tokio::fs::File;
+use tokio_util::io::ReaderStream;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
+// use rust_xlsxwriter::{Format, Workbook, XlsxError};
 
 const DATABASE_NAME: &str = "db.sqlite3";
 
@@ -48,8 +59,32 @@ async fn main() {
         .unwrap();
 }
 
-async fn report_handler() {
-    todo!()
+async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
+    let path = "test.xlsx";
+
+    let file = match File::open(path).await {
+        Ok(file) => file,
+        Err(err) => {
+            return Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("File not found: {}", err),
+            ))
+        }
+    };
+    let stream = ReaderStream::new(file);
+    let body = StreamBody::new(stream);
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        CONTENT_TYPE,
+        HeaderValue::from_static(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        ),
+    );
+    headers.insert(
+        CONTENT_DISPOSITION,
+        HeaderValue::from_static("attachment; filename=\"test.xlsx\""),
+    );
+    Ok((headers, body))
 }
 
 fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
