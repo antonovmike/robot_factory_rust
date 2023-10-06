@@ -1,1 +1,4 @@
+CREATE
 curl -X POST -H "Content-Type: application/json" -d '{"serial":"e8rjg","model":"A1","version":"P8","created":"2023-10-06 11:09:22"}' http://127.0.0.1:8000/robots/create
+ORDER
+curl -X POST -H "Content-Type: application/json" -d '{"email": "test@example.com", "model": "B1", "version": "P8"}' http://127.0.0.1:8000/robots/order

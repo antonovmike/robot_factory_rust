@@ -23,7 +23,9 @@ use validator::Validate;
 mod tests;
 
 mod db;
+mod order;
 use db::*;
+use order::*;
 
 const PATH_TO_XLSX: &str = "robots_report.xlsx";
 
@@ -46,6 +48,7 @@ async fn main() {
     let app = Router::new()
         .route("/robots/report", get(report_handler))
         .route("/robots/create", post(create_robot))
+        .route("/robots/order", post(order_robot))
         .layer(Database::new(DATABASE_NAME).unwrap());
 
     // Запускаем сервер на локальном адресе
