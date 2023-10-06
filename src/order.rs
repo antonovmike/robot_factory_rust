@@ -1,12 +1,13 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use axum::extract::Json;
+use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
-use rusqlite::Connection;
 
-use crate::db::*;
+use crate::{db::*, OrderQueue};
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
@@ -36,6 +37,24 @@ fn validate_model_version(value: &str) -> Result<(), ValidationError> {
 pub async fn order_robot(
     Json(order): Json<Order>,
 ) -> Result<axum::http::StatusCode, axum::http::StatusCode> {
+    if order.validate().is_err() {
+        return Err(axum::http::StatusCode::BAD_REQUEST);
+    }
+    // Создаем экземпляр очереди
+    let queue = OrderQueue::new();
+    // queue.enqueue(order).await;
+    // Оборачиваем очередь в Arc и Mutex для безопасного доступа из разных потоков
+    let queue = Arc::new(Mutex::new(queue));
+    // Клонируем ссылку на очередь для передачи в обработчик /robots/order
+    // let queue_clone = queue.clone();
+    // Запускаем задачу для обработки очереди
+    tokio::spawn(async move {
+        // Получаем доступ к очереди
+        let mut queue = queue.lock().await;
+        // Вызываем метод process для обработки очереди
+        queue.process().await;
+    });
+
     if order.validate().is_err() {
         return Err(axum::http::StatusCode::BAD_REQUEST);
     }

@@ -86,13 +86,14 @@ impl OrderQueue {
     // Метод для обработки очереди
     pub async fn process(&mut self) {
         // Задаем интервал проверки в секундах
-        let interval = 10;
+        let interval = 4;
         // Запускаем бесконечный цикл
         loop {
             // Получаем доступ к соединению с базой данных
             let conn = self.conn.lock().await;
             // Создаем пустой вектор для хранения заказов, которые еще не выполнены
             let mut pending_orders = Vec::new();
+            println!("LOOP\t{pending_orders:?}");
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
             for order in self.orders.drain(..) {
                 // Формируем запрос на поиск робота по модели и версии
