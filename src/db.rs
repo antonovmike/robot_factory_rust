@@ -34,31 +34,46 @@ created TEXT NOT NULL
     Ok(conn)
 }
 
-pub fn get_robots_by_date(date: &str) -> Result<Vec<Robot>, rusqlite::Error> {
+// pub fn get_robots_by_date(date: &str) -> Result<Vec<Robot>, rusqlite::Error> {
+//     // Открываем соединение с базой данных
+//     let conn = Connection::open(Path::new("db.sqlite3"))?;
+//     // Формируем запрос на выборку роботов по дате создания
+//     let statement = format!(
+//         "SELECT serial, model, version, created FROM robots
+// WHERE created >= date('{}')",
+//         date
+//     );
+//     // Выполняем запрос и получаем итератор по строкам
+//     let mut stmt = conn.prepare(&statement)?;
+//     let rows = stmt.query_map([], |row| {
+//         Ok(Robot {
+//             serial: row.get(0)?,
+//             model: row.get(1)?,
+//             version: row.get(2)?,
+//             created: row.get(3)?,
+//         })
+//     })?;
+//     // Собираем строки в вектор роботов
+//     let mut robots = Vec::new();
+//     for row in rows {
+//         robots.push(row?);
+//     }
+//     Ok(robots)
+// }
+
+pub fn get_robots_by_date(date: &str) -> Result<i64, rusqlite::Error> {
     // Открываем соединение с базой данных
     let conn = Connection::open(Path::new("db.sqlite3"))?;
-    // Формируем запрос на выборку роботов по дате создания
+    // Формируем запрос на выборку суммы всех роботов до даты и времени создания
     let statement = format!(
-        "SELECT serial, model, version, created FROM robots 
-WHERE created >= date('{}')",
+        "SELECT COUNT(*) FROM robots 
+    WHERE created <= datetime('{}')",
         date
     );
-    // Выполняем запрос и получаем итератор по строкам
-    let mut stmt = conn.prepare(&statement)?;
-    let rows = stmt.query_map([], |row| {
-        Ok(Robot {
-            serial: row.get(0)?,
-            model: row.get(1)?,
-            version: row.get(2)?,
-            created: row.get(3)?,
-        })
-    })?;
-    // Собираем строки в вектор роботов
-    let mut robots = Vec::new();
-    for row in rows {
-        robots.push(row?);
-    }
-    Ok(robots)
+    // Выполняем запрос и получаем одно число из первой строки и первого столбца
+    let count: i64 = conn.query_row(&statement, [], |row| row.get(0))?;
+    // Возвращаем количество роботов
+    Ok(count)
 }
 
 fn validate_model_version(value: &str) -> Result<(), ValidationError> {

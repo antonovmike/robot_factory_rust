@@ -39,9 +39,10 @@ struct _Order {
 
 #[tokio::main]
 async fn main() {
-    let stats = get_robots_by_date("2023-10-06 11:11:22");
+    let current_day = "2023-10-06 12:17:22";
+    let stats = get_robots_by_date(current_day).unwrap();
+    println!("Total amount of robots on {current_day} is {stats}"); 
     
-    println!("{stats:?}");
     // Создаем маршрутизатор
     let app = Router::new()
         .route("/robots/report", get(report_handler))
