@@ -12,7 +12,7 @@ use axum::{
     Json, Router, Server,
 };
 use axum_sqlite::*;
-use http::header::{CONTENT_DISPOSITION, CONTENT_TYPE};
+use http::header::CONTENT_TYPE;
 use regex::Regex;
 use rusqlite::{Connection, Result};
 use rust_xlsxwriter::Workbook;
@@ -25,12 +25,12 @@ use validator_derive::Validate;
 const DATABASE_NAME: &str = "db.sqlite3";
 const PATH_TO_XLSX: &str = "robots_report.xlsx";
 
-struct Customer {
+struct _Customer {
     email: String,
 }
 
-struct Order {
-    customer: Customer,
+struct _Order {
+    customer: _Customer,
     robot_serial: String,
 }
 
@@ -160,10 +160,7 @@ async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         ),
     );
-    headers.insert(
-        CONTENT_DISPOSITION,
-        HeaderValue::from_static("attachment; filename=\"robots_report.xlsx\""),
-    );
+    
     Ok((headers, body))
 }
 
@@ -290,14 +287,7 @@ mod tests {
             res.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         );
-        // Заголовок Content-Disposition ответа должен содержать имя файла robots_report.xlsx
-        assert!(res
-            .headers()
-            .get(CONTENT_DISPOSITION)
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .contains("robots_report.xlsx"));
+        
         // Тело ответа должно содержать байты Excel-файла
         // Используем метод bytes() вместо body() для чтения тела ответа как вектора байтов
         let body = res.bytes().await;
