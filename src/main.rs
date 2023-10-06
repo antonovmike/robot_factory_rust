@@ -72,7 +72,7 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
     let mut stmt = conn
         .prepare(
             "SELECT model, version, COUNT(*) as count FROM robots 
-            WHERE created >= date('now', '-7 day') GROUP BY model, version"
+            WHERE created >= date('now', '-7 day') GROUP BY model, version",
         )
         .unwrap();
     let robots_iter = stmt
@@ -274,5 +274,33 @@ mod tests {
 
         let res = client.post("/robots/create").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_report_handler_success() {
+        // Маршрутизатор с обработчиком report_handler и тестовый клиент
+        let app = Router::new().route("/robots/report", get(report_handler));
+        let client = TestClient::new(app);
+        // Отправляем GET-запрос к обработчику report_handler
+        let res = client.get("/robots/report").send().await;
+        // Проверяем статус ответа - должен быть 200 OK
+        assert_eq!(res.status(), StatusCode::OK);
+        // Тип содержимого ответа должен быть application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        assert_eq!(
+            res.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+        // Заголовок Content-Disposition ответа должен содержать имя файла robots_report.xlsx
+        assert!(res
+            .headers()
+            .get(CONTENT_DISPOSITION)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .contains("robots_report.xlsx"));
+        // Тело ответа должно содержать байты Excel-файла
+        // Используем метод bytes() вместо body() для чтения тела ответа как вектора байтов
+        let body = res.bytes().await;
+        assert!(body.starts_with(b"PK\x03\x04")); // Excel-файлы начинаются с байтов PK\x03\x04
     }
 }
