@@ -36,7 +36,7 @@ const PATH_TO_XLSX: &str = "robots_report.xlsx";
 // Структура для представления очереди заказов
 pub struct OrderQueue {
     // Вектор заказов
-    orders: Vec<Order>,
+    pub orders: Vec<Order>,
     // Ссылка на соединение с базой данных
     conn: Arc<Mutex<Connection>>,
 }
@@ -59,6 +59,7 @@ impl OrderQueue {
 
     // Метод для добавления заказа в очередь
     pub async fn enqueue(&mut self, order: Order) {
+        println!("enqueue: {order:?}");
         // Получаем доступ к соединению с базой данных
         let conn = self.conn.lock().await;
         // Формируем запрос на поиск робота по модели и версии

@@ -41,8 +41,8 @@ pub async fn order_robot(
         return Err(axum::http::StatusCode::BAD_REQUEST);
     }
     // Создаем экземпляр очереди
-    let queue = OrderQueue::new();
-    // queue.enqueue(order).await;
+    let mut queue = OrderQueue::new();
+    queue.enqueue(order).await;
     // Оборачиваем очередь в Arc и Mutex для безопасного доступа из разных потоков
     let queue = Arc::new(Mutex::new(queue));
     // Клонируем ссылку на очередь для передачи в обработчик /robots/order
@@ -55,9 +55,9 @@ pub async fn order_robot(
         queue.process().await;
     });
 
-    if order.validate().is_err() {
-        return Err(axum::http::StatusCode::BAD_REQUEST);
-    }
+    // if order.validate().is_err() {
+    //     return Err(axum::http::StatusCode::BAD_REQUEST);
+    // }
 
     let conn = match Connection::open(Path::new(DATABASE_NAME)) {
         Ok(conn) => conn,
@@ -65,8 +65,8 @@ pub async fn order_robot(
     };
     // Формируем запрос на поиск робота по модели и версии
     let statement = format!(
-        "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
-        &order.model, &order.version
+        "SELECT * FROM robots WHERE model = 'X0' AND version = 'X0'",
+        // &order.model, &order.version
     );
     // Выполняем запрос и получаем результат
     let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
@@ -74,13 +74,13 @@ pub async fn order_robot(
     match result {
         Ok(_) => {
             // Робот найден, выводим сообщение в терминал
-            println!("product is in stock");
+            println!("Product is in stock");
             // Возвращаем статус 200 (OK)
             Ok(axum::http::StatusCode::OK)
         }
         Err(_) => {
             // Робот не найден, выводим сообщение в терминал
-            println!("product is out of stock");
+            println!("Product is out of stock");
             // Возвращаем статус 404 (Not Found)
             Err(axum::http::StatusCode::NOT_FOUND)
         }
