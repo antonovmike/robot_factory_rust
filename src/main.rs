@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fs;
 use std::net::SocketAddr;
 use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
 
 use axum::body::StreamBody;
 use axum::http::{self, HeaderMap, HeaderValue};
@@ -16,6 +18,8 @@ use http::header::CONTENT_TYPE;
 use rusqlite::{Connection, Result};
 use rust_xlsxwriter::Workbook;
 use tokio::fs::File;
+use tokio::sync::Mutex;
+use tokio::time::sleep;
 use tokio_util::io::ReaderStream;
 use validator::Validate;
 
@@ -28,6 +32,98 @@ use db::*;
 use order::*;
 
 const PATH_TO_XLSX: &str = "robots_report.xlsx";
+
+// Структура для представления очереди заказов
+pub struct OrderQueue {
+    // Вектор заказов
+    orders: Vec<Order>,
+    // Ссылка на соединение с базой данных
+    conn: Arc<Mutex<Connection>>,
+}
+
+impl OrderQueue {
+    // Метод для создания нового экземпляра очереди
+    pub fn new() -> Self {
+        // Открываем соединение с базой данных
+        let conn = match Connection::open(Path::new(DATABASE_NAME)) {
+            Ok(conn) => conn,
+            Err(err) => panic!("Failed to open database connection: {}", err),
+        };
+        // Оборачиваем соединение в Arc и Mutex для безопасного доступа из разных потоков
+        let conn = Arc::new(Mutex::new(conn));
+        // Создаем пустой вектор заказов
+        let orders = Vec::new();
+        // Возвращаем новый экземпляр очереди
+        Self { orders, conn }
+    }
+
+    // Метод для добавления заказа в очередь
+    pub async fn enqueue(&mut self, order: Order) {
+        // Получаем доступ к соединению с базой данных
+        let conn = self.conn.lock().await;
+        // Формируем запрос на поиск робота по модели и версии
+        let statement = format!(
+            "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
+            &order.model, &order.version
+        );
+        // Выполняем запрос и получаем результат
+        let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
+        // Проверяем, что результат не пустой
+        match result {
+            Ok(_) => {
+                // Робот найден, выводим сообщение в терминал
+                println!("product is in stock");
+            }
+            Err(_) => {
+                // Робот не найден, выводим сообщение в терминал
+                println!("product is out of stock");
+                // Добавляем заказ в вектор
+                self.orders.push(order);
+            }
+        }
+    }
+
+    // Метод для обработки очереди
+    pub async fn process(&mut self) {
+        // Задаем интервал проверки в секундах
+        let interval = 10;
+        // Запускаем бесконечный цикл
+        loop {
+            // Получаем доступ к соединению с базой данных
+            let conn = self.conn.lock().await;
+            // Создаем пустой вектор для хранения заказов, которые еще не выполнены
+            let mut pending_orders = Vec::new();
+            // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
+            for order in self.orders.drain(..) {
+                // Формируем запрос на поиск робота по модели и версии
+                let statement = format!(
+                    "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
+                    &order.model, &order.version
+                );
+                // Выполняем запрос и получаем результат
+                let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
+                // Проверяем, что результат не пустой
+                match result {
+                    Ok(_) => {
+                        // Робот найден, выводим сообщение в терминал
+                        println!("product is available");
+                        // Не добавляем заказ обратно в вектор, так как он выполнен
+                    }
+                    Err(_) => {
+                        // Робот не найден, добавляем заказ в вектор для дальнейшей обработки
+                        pending_orders.push(order);
+                    }
+                }
+            }
+            // Заменяем вектор заказов на вектор невыполненных заказов
+            self.orders = pending_orders;
+            // Освобождаем доступ к соединению с базой данных
+            drop(conn);
+            // Ждем заданный интервал времени
+            sleep(Duration::from_secs(interval)).await;
+        }
+    }
+}
 
 struct _Customer {
     email: String,
@@ -42,8 +138,8 @@ struct _Order {
 async fn main() {
     let current_day = "2023-10-06 12:17:22";
     let stats = get_robots_by_date(current_day).unwrap();
-    println!("Total amount of robots on {current_day} is {stats}"); 
-    
+    println!("Total amount of robots on {current_day} is {stats}");
+
     // Создаем маршрутизатор
     let app = Router::new()
         .route("/robots/report", get(report_handler))
@@ -158,7 +254,7 @@ async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         ),
     );
-    
+
     Ok((headers, body))
 }
 
