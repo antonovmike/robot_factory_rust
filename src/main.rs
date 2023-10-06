@@ -25,7 +25,6 @@ mod tests;
 mod db;
 use db::*;
 
-// const DATABASE_NAME: &str = "db.sqlite3";
 const PATH_TO_XLSX: &str = "robots_report.xlsx";
 
 struct _Customer {
@@ -160,21 +159,6 @@ async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
     Ok((headers, body))
 }
 
-// fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
-//     let conn = Connection::open(DATABASE_NAME)?;
-//     conn.execute(
-//         "CREATE TABLE IF NOT EXISTS robots (
-//                 id INTEGER PRIMARY KEY,
-//                 serial TEXT NOT NULL,
-//                 model TEXT NOT NULL,
-//                 version TEXT NOT NULL,
-//                 created TEXT NOT NULL
-//             )",
-//         [],
-//     )?;
-//     Ok(conn)
-// }
-
 async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     // Проверяем данные на валидность
     if robot.validate().is_err() {
@@ -201,16 +185,3 @@ async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
-
-// fn validate_model_version(value: &str) -> Result<(), ValidationError> {
-//     // Создаем регулярное выражение для проверки строки
-//     let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
-//     // Проверяем, что строка соответствует регулярному выражению
-//     if !re.is_match(value) {
-//         // Возвращаем ошибку с кодом и сообщением
-//         println!("Invalid model version");
-//         return Err(ValidationError::new("invalid_model_version"));
-//     }
-
-//     Ok(())
-// }
