@@ -1,11 +1,13 @@
-use std::{path::Path, sync::Arc};
 use std::time::Duration;
+use std::{path::Path, sync::Arc};
 
 use axum::extract::Json;
+use lettre::transport::smtp::response::Response;
+use lettre::{Message, SmtpTransport, Transport};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
-use tokio::time::sleep;
 use tokio::sync::Mutex;
+use tokio::time::sleep;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
@@ -21,6 +23,10 @@ pub struct Order {
     pub model: String,
     #[validate(custom = "validate_model_version")]
     pub version: String,
+}
+
+struct _Customer {
+    email: String,
 }
 
 // Структура для представления очереди заказов
@@ -94,7 +100,7 @@ impl OrderQueue {
                 );
                 // Выполняем запрос и получаем результат
                 let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
-                
+
                 match result {
                     Ok(_) => {
                         // Робот найден, выводим сообщение в терминал
@@ -106,7 +112,7 @@ impl OrderQueue {
                             Этот робот теперь в наличии. Если вам подходит этот вариант - пожалуйста, свяжитесь с нами",
                             &order.model, &order.version
                         );
-                        
+                        send_email("customer@test.org", &message).unwrap();
                         println!("{}", message);
                         // Заказ обратно в вектор, так как он выполнен
                     }
@@ -115,7 +121,6 @@ impl OrderQueue {
                         pending_orders.push(order);
                     }
                 }
-                
             }
             // Заменяем вектор заказов на вектор невыполненных заказов
             self.orders = pending_orders;
@@ -165,4 +170,23 @@ pub async fn order_robot(
         // Если в очереди есть заказы, возвращаем статус код 404 (Not Found)
         Err(axum::http::StatusCode::NOT_FOUND)
     }
+}
+
+fn send_email(to: &str, body: &str) -> Result<Response, lettre::transport::smtp::Error> {
+    let email = Message::builder()
+        .from("noreply@example.com".parse().unwrap())
+        .to(to.parse().unwrap())
+        .subject("Your order is available")
+        .body(body.to_string())
+        .unwrap();
+
+    let mailer = SmtpTransport::relay("example.com")
+        .unwrap()
+        .credentials(lettre::transport::smtp::authentication::Credentials::new(
+            "user".to_string(),
+            "password".to_string(),
+        ))
+        .build();
+
+    mailer.send(&email)
 }
