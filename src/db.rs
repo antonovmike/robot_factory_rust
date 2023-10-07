@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
-pub const DATABASE_NAME: &str = "db.sqlite3";
+use crate::constants::DATABASE_NAME;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Robot {
