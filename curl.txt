@@ -1,6 +1,7 @@
+DOWNLOAD WEEKLY REPORT
+w3m http://127.0.0.1:8000/robots/report
+
 CREATE
 curl -X POST -H "Content-Type: application/json" -d '{"serial":"e8rjg","model":"A1","version":"P8","created":"2023-10-06 11:09:22"}' http://127.0.0.1:8000/robots/create
 ORDER
-curl -X POST -H "Content-Type: application/json" -d '{"email": "test@example.com", "model": "B9", "version": "P8"}' http://127.0.0.1:8000/robots/order
-
-curl -X POST -H "Content-Type: application/json" -d '{"serial":"e8rjg","model":"C9","version":"P8","created":"2023-10-06 11:09:22"}' http://127.0.0.1:8000/robots/create
+curl -X POST -H "Content-Type: application/json" -d '{"email": "test@example.com", "model": "C2", "version": "B1"}' http://127.0.0.1:8000/robots/order

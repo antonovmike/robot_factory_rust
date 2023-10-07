@@ -137,48 +137,22 @@ pub async fn order_robot(
         return Err(axum::http::StatusCode::BAD_REQUEST);
     }
     // Создаем экземпляр очереди
-    let mut queue = OrderQueue::new();
-    queue.enqueue(order).await;
-    // Оборачиваем очередь в Arc и Mutex для безопасного доступа из разных потоков
-    let queue = Arc::new(Mutex::new(queue));
+    let queue = Arc::new(Mutex::new(OrderQueue::new()));
+    // Получаем блокировку на очередь и добавляем заказ
+    queue.lock().await.enqueue(order).await;
     // Запускаем задачу для обработки очереди
+    let queue_clone = Arc::clone(&queue);
     tokio::spawn(async move {
-        // Получаем доступ к очереди
-        let mut queue = queue.lock().await;
-        // Вызываем метод process для обработки очереди
-        queue.process().await;
+        // Получаем блокировку на очередь и вызываем метод process
+        queue_clone.lock().await.process().await;
     });
 
-    // EDIT THIS PART
-
-    // if order.validate().is_err() {
-    //     return Err(axum::http::StatusCode::BAD_REQUEST);
-    // }
-
-    let conn = match Connection::open(Path::new(DATABASE_NAME)) {
-        Ok(conn) => conn,
-        Err(_) => return Err(axum::http::StatusCode::INTERNAL_SERVER_ERROR),
-    };
-    // Формируем запрос на поиск робота по модели и версии
-    let statement = format!(
-        "SELECT * FROM robots WHERE model = 'X0' AND version = 'X0'",
-        // &order.model, &order.version
-    );
-    // Выполняем запрос и получаем результат
-    let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
-    // Проверяем, что результат не пустой
-    match result {
-        Ok(_) => {
-            // Робот найден, выводим сообщение в терминал
-            println!("Product is in stock");
-            // Возвращаем статус 200 (OK)
-            Ok(axum::http::StatusCode::OK)
-        }
-        Err(_) => {
-            // Робот не найден, выводим сообщение в терминал
-            println!("Product is out of stock");
-            // Возвращаем статус 404 (Not Found)
-            Err(axum::http::StatusCode::NOT_FOUND)
-        }
+    // Проверяем, есть ли заказы в очереди
+    if queue.lock().await.orders.is_empty() {
+        // Если очередь пуста, возвращаем статус код 200 (OK)
+        Ok(axum::http::StatusCode::OK)
+    } else {
+        // Если в очереди есть заказы, возвращаем статус код 404 (Not Found)
+        Err(axum::http::StatusCode::NOT_FOUND)
     }
 }
