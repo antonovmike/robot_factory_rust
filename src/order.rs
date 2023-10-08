@@ -11,7 +11,7 @@ use tokio::time::sleep;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
-use crate::constants::DATABASE_NAME;
+use crate::constants::*;
 use crate::structures::Customer;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
@@ -63,7 +63,7 @@ impl OrderQueue {
         println!("enqueue: {order:?}");
         // Получаем доступ к соединению с базой данных
         let conn = self.conn.lock().await;
-        
+
         let result = find_robot_in_db(&conn, &order.model, &order.version);
         // Проверяем, что результат не пустой
         match result {
@@ -82,8 +82,6 @@ impl OrderQueue {
 
     // Метод для обработки очереди
     pub async fn process(&mut self) {
-        // Задаем интервал проверки в секундах
-        let interval = 4;
         // Запускаем бесконечный цикл
         loop {
             // Получаем доступ к соединению с базой данных
@@ -121,7 +119,7 @@ impl OrderQueue {
             // Освобождаем доступ к соединению с базой данных
             drop(conn);
             // Ждем заданный интервал времени
-            sleep(Duration::from_secs(interval)).await;
+            sleep(Duration::from_secs(CHECK_INTERVAL)).await;
         }
     }
 }
@@ -168,13 +166,13 @@ pub async fn order_robot(
 
 fn send_email(to: &str, body: &str) -> Result<Response, lettre::transport::smtp::Error> {
     let email = Message::builder()
-        .from("noreply@example.com".parse().unwrap())
+        .from(SMTP_SENDER.parse().unwrap())
         .to(to.parse().unwrap())
         .subject("Your order is available")
         .body(body.to_string())
         .unwrap();
 
-    let mailer = SmtpTransport::relay("example.com")
+    let mailer = SmtpTransport::relay(SMTP_SERVER)
         .unwrap()
         .credentials(lettre::transport::smtp::authentication::Credentials::new(
             "user".to_string(),
