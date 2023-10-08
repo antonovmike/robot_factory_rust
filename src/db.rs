@@ -10,12 +10,12 @@ pub fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
     let conn = Connection::open(DATABASE_NAME)?;
     conn.execute(
         "CREATE TABLE IF NOT EXISTS robots (
-id INTEGER PRIMARY KEY,
-serial TEXT NOT NULL,
-model TEXT NOT NULL,
-version TEXT NOT NULL,
-created TEXT NOT NULL
-)",
+            id INTEGER PRIMARY KEY,
+            serial TEXT NOT NULL,
+            model TEXT NOT NULL,
+            version TEXT NOT NULL,
+            created TEXT NOT NULL
+            )",
         [],
     )?;
     Ok(conn)

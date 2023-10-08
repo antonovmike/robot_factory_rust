@@ -32,6 +32,16 @@ pub struct OrderQueue {
     conn: Arc<Mutex<Connection>>,
 }
 
+// Формируем запрос на поиск робота по модели и версии
+// Выполняем запрос и получаем результат
+fn find_robot_in_db(conn: &Connection, model: &str, version: &str) -> rusqlite::Result<i64> {
+    let statement = format!(
+        "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
+        model, version
+    );
+    conn.query_row(&statement, [], |row| row.get::<_, i64>(0))
+}
+
 impl OrderQueue {
     // Метод для создания нового экземпляра очереди
     pub fn new() -> Self {
@@ -53,13 +63,8 @@ impl OrderQueue {
         println!("enqueue: {order:?}");
         // Получаем доступ к соединению с базой данных
         let conn = self.conn.lock().await;
-        // Формируем запрос на поиск робота по модели и версии
-        let statement = format!(
-            "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
-            &order.model, &order.version
-        );
-        // Выполняем запрос и получаем результат
-        let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
+        
+        let result = find_robot_in_db(&conn, &order.model, &order.version);
         // Проверяем, что результат не пустой
         match result {
             Ok(_) => {
@@ -88,13 +93,7 @@ impl OrderQueue {
             println!("LOOP\t{pending_orders:?}");
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
             for order in self.orders.drain(..) {
-                // Формируем запрос на поиск робота по модели и версии
-                let statement = format!(
-                    "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
-                    &order.model, &order.version
-                );
-                // Выполняем запрос и получаем результат
-                let result = conn.query_row(&statement, [], |row| row.get::<_, i64>(0));
+                let result = find_robot_in_db(&conn, &order.model, &order.version);
 
                 match result {
                     Ok(_) => {
