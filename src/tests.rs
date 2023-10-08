@@ -1,5 +1,5 @@
 use super::*;
-use db::*;
+use crate::structures::Robot;
 
 use axum::{routing::{get, post}, Router, http};
 use http::header::CONTENT_TYPE;

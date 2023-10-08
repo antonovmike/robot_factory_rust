@@ -2,22 +2,9 @@ use std::path::Path;
 
 use regex::Regex;
 use rusqlite::{Connection, Result};
-use serde::{Deserialize, Serialize};
-use validator::{Validate, ValidationError};
-use validator_derive::Validate;
+use validator::ValidationError;
 
 use crate::constants::DATABASE_NAME;
-
-#[derive(Debug, Deserialize, Serialize, Validate)]
-pub struct Robot {
-    #[validate(length(min = 1, max = 5))]
-    pub serial: String,
-    #[validate(custom = "validate_model_version")]
-    pub model: String,
-    #[validate(custom = "validate_model_version")]
-    pub version: String,
-    pub created: String,
-}
 
 pub fn setup_database() -> Result<rusqlite::Connection, rusqlite::Error> {
     let conn = Connection::open(DATABASE_NAME)?;
@@ -49,7 +36,7 @@ pub fn get_robots_by_date(date: &str) -> Result<i64, rusqlite::Error> {
     Ok(count)
 }
 
-fn validate_model_version(value: &str) -> Result<(), ValidationError> {
+pub fn validate_model_version(value: &str) -> Result<(), ValidationError> {
     // Создаем регулярное выражение для проверки строки
     let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
     // Проверяем, что строка соответствует регулярному выражению

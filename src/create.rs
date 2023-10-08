@@ -1,15 +1,11 @@
 use std::path::Path;
 
-use axum::{
-    http::StatusCode,
-    // routing::{get, post},
-    Json
-};
+use axum::{http::StatusCode, Json};
 use rusqlite::{Connection, Result};
 use validator::Validate;
 
 use crate::constants::DATABASE_NAME;
-use crate::db::Robot;
+use crate::structures::Robot;
 use crate::db::setup_database;
 
 pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
