@@ -25,12 +25,7 @@ use create::*;
 
 #[tokio::main]
 async fn main() {
-    let now = Local::now();
-    let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
-    match get_robots_by_date(&date) {
-        Ok(count) => println!("Total amount of robots on {date} is {count}"),
-        Err(e) => println!("Error: {}", e),
-    }
+    amount_of_robots();
 
     // Создаем маршрутизатор
     let app = Router::new()
@@ -47,4 +42,13 @@ async fn main() {
         .serve(app.into_make_service())
         .await
         .unwrap();
+}
+
+fn amount_of_robots() {
+    let now = Local::now();
+    let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
+    match get_robots_by_date(&date) {
+        Ok(count) => println!("Total amount of robots on {date} is {count}"),
+        Err(e) => println!("Error: {}", e),
+    }
 }
