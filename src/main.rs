@@ -31,12 +31,13 @@ async fn main() {
         Ok(count) => println!("Total amount of robots on {date} is {count}"),
         Err(e) => println!("Error: {}", e),
     }
-        
+
     // Создаем маршрутизатор
     let app = Router::new()
         .route("/robots/report", get(report_handler))
         .route("/robots/create", post(create_robot))
         .route("/robots/order", post(order_robot))
+        .route("/robots/remove", post(remove_robot))
         .layer(Database::new(DATABASE_NAME).unwrap());
 
     // Запускаем сервер на локальном адресе

@@ -34,3 +34,18 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
+
+pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
+    let conn = match Connection::open(Path::new(DATABASE_NAME)) {
+        Ok(conn) => conn,
+        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
+    };
+    let statement = format!(
+        "DELETE FROM robots WHERE serial = '{}' AND model = '{}' AND version = '{}'",
+        &robot.serial, &robot.model, &robot.version
+    );
+    match conn.execute(&statement, []) {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
