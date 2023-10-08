@@ -36,6 +36,10 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 }
 
 pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
+    // Проверяем данные на валидность
+    if robot.validate().is_err() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
     let conn = match Connection::open(Path::new(DATABASE_NAME)) {
         Ok(conn) => conn,
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),

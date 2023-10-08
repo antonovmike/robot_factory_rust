@@ -1,7 +1,11 @@
 use super::*;
 use crate::structures::Robot;
 
-use axum::{routing::{get, post}, Router, http};
+use axum::{
+    http,
+    routing::{get, post},
+    Router,
+};
 use http::header::CONTENT_TYPE;
 
 #[cfg(test)]
@@ -72,10 +76,55 @@ mod tests {
             res.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         );
-        
+
         // Тело ответа должно содержать байты Excel-файла
         // Используем метод bytes() вместо body() для чтения тела ответа как вектора байтов
+        // Excel-файлы начинаются с байтов PK\x03\x04
         let body = res.bytes().await;
-        assert!(body.starts_with(b"PK\x03\x04")); // Excel-файлы начинаются с байтов PK\x03\x04
+        assert!(body.starts_with(b"PK\x03\x04"));
+    }
+
+    #[tokio::test]
+    async fn test_remove_robot_valid() {
+        let app = Router::new()
+            .route("/robots/create", post(create_robot))
+            .route("/robots/remove", post(remove_robot));
+        let client = TestClient::new(app);
+    
+        // Создаем робота с допустимыми значениями
+        let robot = Robot {
+            serial: "R1".to_string(),
+            model: "M1".to_string(),
+            version: "V1".to_string(),
+            created: "2023-10-04".to_string(),
+        };
+        let _ = client.post("/robots/create").json(&robot).send().await;
+
+        let robot = Robot {
+            serial: "R1".to_string(),
+            model: "M1".to_string(),
+            version: "V1".to_string(),
+            created: "2023-10-04".to_string(),
+        };
+
+        let res = client.post("/robots/remove").json(&robot).send().await;
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_remove_robot_not_found() {
+        let app = Router::new()
+            .route("/robots/remove", post(remove_robot));
+        let client = TestClient::new(app);
+    
+        // Пытаемся удалить робота, которого нет в базе данных
+        let non_existent_robot = Robot {
+            serial: "R99".to_string(),
+            model: "M1".to_string(),
+            version: "V1".to_string(),
+            created: "2023-10-04".to_string(),
+        };
+        let res = client.post("/robots/remove").json(&non_existent_robot).send().await;
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 }
