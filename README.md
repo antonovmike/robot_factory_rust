@@ -1,5 +1,7 @@
 # R4C - Robots for consumers
 
+[Python version](https://github.com/antonovmike/R4C/tree/task_3)
+
 ## Небольшая предыстория.
 Давным-давно, в далёкой-далёкой галактике, была компания производящая различных 
 роботов. 
