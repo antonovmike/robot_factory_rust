@@ -45,7 +45,19 @@ pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         &robot.serial, &robot.model, &robot.version
     );
     match conn.execute(&statement, []) {
-        Ok(_) => Ok(StatusCode::OK),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+        Ok(rows_affected) => {
+            if rows_affected > 0 {
+                println!("Robot has been removed");
+                Ok(StatusCode::OK)
+            } else {
+                println!("Robot not found");
+                Err(StatusCode::NOT_FOUND)
+            }
+        },
+        Err(_) => {
+            println!("An error occurred while attempting to remove the robot");
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
     }
 }
+
