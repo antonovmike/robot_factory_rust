@@ -13,7 +13,7 @@ use rust_xlsxwriter::{Workbook, Worksheet, XlsxError};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::constants::*;
+use crate::constants::{PATH_TO_XLSX, DATABASE_NAME, SHEET_HEADERS};
 
 fn create_xlsx() -> Result<(), anyhow::Error> {
     // Check if the file exists and delete it if it does

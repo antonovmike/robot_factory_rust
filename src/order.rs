@@ -11,7 +11,7 @@ use tokio::time::sleep;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
-use crate::constants::*;
+use crate::constants::{CHECK_INTERVAL, DATABASE_NAME, SMTP_SENDER, SMTP_SERVER};
 use crate::structures::Customer;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
