@@ -11,11 +11,12 @@ use crate::structures::Robot;
 pub fn generate_serial_number(model: &str) -> Result<String, rusqlite::Error> {
     let conn = Connection::open(DATABASE_NAME)?;
 
-    let sql = "SELECT MAX(serial) as max_serial FROM robots WHERE model = ?";
+    let sql = "SELECT COUNT(*) as count FROM robots WHERE model = ?";
     let mut stmt = conn.prepare(&sql)?;
     
     let max_serial: Option<i32> = stmt.query_row(params![model], |row| row.get(0))?;
     let new_serial = format!("{}{:04}", model, max_serial.unwrap_or(0) + 1);
+    
     Ok(new_serial)    
 }
 
