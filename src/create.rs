@@ -1,12 +1,23 @@
 use std::path::Path;
 
 use axum::{http::StatusCode, Json};
-use rusqlite::{Connection, Result};
+use rusqlite::{params, Connection, Result};
 use validator::Validate;
 
 use crate::constants::DATABASE_NAME;
 use crate::db::setup_database;
 use crate::structures::Robot;
+
+pub fn generate_serial_number(model: &str) -> Result<String, rusqlite::Error> {
+    let conn = Connection::open(DATABASE_NAME)?;
+
+    let sql = "SELECT MAX(serial) as max_serial FROM robots WHERE model = ?";
+    let mut stmt = conn.prepare(&sql)?;
+    
+    let max_serial: Option<i32> = stmt.query_row(params![model], |row| row.get(0))?;
+    let new_serial = format!("{}{:04}", model, max_serial.unwrap_or(0) + 1);
+    Ok(new_serial)    
+}
 
 // Проверяем данные на валидность
 fn validate_robot(robot: &Robot) -> Result<(), StatusCode> {
@@ -30,6 +41,14 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 
     let conn = open_database()?;
 
+    let mut serial_number = String::new();
+    if robot.serial == "0" {
+        serial_number = generate_serial_number(&robot.model).unwrap();
+    } else {
+        serial_number = robot.serial
+    }
+    println!("serial_number: {serial_number}");
+
     // Создаем таблицу robots, если ее не существует
     match setup_database() {
         Ok(_) => (),
@@ -38,7 +57,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     // Формируем запрос на вставку данных о роботе
     let statement = format!(
         "INSERT INTO robots (serial, model, version, created) VALUES ('{}', '{}', '{}', '{}')",
-        &robot.serial, &robot.model, &robot.version, &robot.created
+        &serial_number, &robot.model, &robot.version, &robot.created
     );
     // Выполняем запрос и возвращаем статус
     match conn.execute(&statement, []) {
