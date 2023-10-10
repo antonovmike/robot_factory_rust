@@ -42,13 +42,13 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 
     let conn = open_database()?;
 
-    let mut serial_number = String::new();
+    let serial_number;
     if robot.serial == "0" {
         serial_number = generate_serial_number(&robot.model).unwrap();
     } else {
         serial_number = robot.serial
     }
-    println!("serial_number: {serial_number}");
+    println!("Serial number: {serial_number}");
 
     // Создаем таблицу robots, если ее не существует
     match setup_database() {
