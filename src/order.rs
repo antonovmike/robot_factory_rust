@@ -1,11 +1,11 @@
 use std::time::Duration;
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use axum::extract::Json;
 use lettre::transport::smtp::response::Response;
 use lettre::{Message, SmtpTransport, Transport};
-use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
+use sqlx::sqlite::SqlitePool;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use validator::{Validate, ValidationError};
@@ -29,42 +29,43 @@ pub struct OrderQueue {
     // Вектор заказов
     pub orders: Vec<Order>,
     // Ссылка на соединение с базой данных
-    conn: Arc<Mutex<Connection>>,
+    pool: Arc<Mutex<SqlitePool>>,
 }
 
 // Формируем запрос на поиск робота по модели и версии
 // Выполняем запрос и получаем результат
-fn find_robot_in_db(conn: &Connection, model: &str, version: &str) -> rusqlite::Result<i64> {
-    let statement = format!(
-        "SELECT * FROM robots WHERE model = '{}' AND version = '{}'",
-        model, version
-    );
-    conn.query_row(&statement, [], |row| row.get::<_, i64>(0))
+async fn find_robot_in_db(pool: &SqlitePool, model: &str, version: &str) -> sqlx::Result<i64> {
+    let sql = "SELECT * FROM robots WHERE model = $1 AND version = $2";
+    sqlx::query_scalar(sql)
+        .bind(model)
+        .bind(version)
+        .fetch_one(pool)
+        .await
 }
 
 impl OrderQueue {
     // Метод для создания нового экземпляра очереди
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         // Открываем соединение с базой данных
-        let conn = match Connection::open(Path::new(DATABASE_NAME)) {
-            Ok(conn) => conn,
+        let pool = match SqlitePool::connect(DATABASE_NAME).await {
+            Ok(pool) => pool,
             Err(err) => panic!("Failed to open database connection: {}", err),
         };
         // Оборачиваем соединение в Arc и Mutex для безопасного доступа из разных потоков
-        let conn = Arc::new(Mutex::new(conn));
+        let pool = Arc::new(Mutex::new(pool));
         // Создаем пустой вектор заказов
         let orders = Vec::new();
         // Возвращаем новый экземпляр очереди
-        Self { orders, conn }
+        Self { orders, pool }
     }
 
     // Метод для добавления заказа в очередь
     pub async fn enqueue(&mut self, order: Order) {
         println!("enqueue: {order:?}");
         // Получаем доступ к соединению с базой данных
-        let conn = self.conn.lock().await;
+        let pool = self.pool.lock().await;
 
-        let result = find_robot_in_db(&conn, &order.model, &order.version);
+        let result = find_robot_in_db(&pool, &order.model, &order.version).await;
         // Проверяем, что результат не пустой
         match result {
             Ok(_) => {
@@ -85,13 +86,13 @@ impl OrderQueue {
         // Запускаем бесконечный цикл
         loop {
             // Получаем доступ к соединению с базой данных
-            let conn = self.conn.lock().await;
+            let pool = self.pool.lock().await;
             // Создаем пустой вектор для хранения заказов, которые еще не выполнены
             let mut pending_orders = Vec::new();
             println!("LOOP\t{pending_orders:?}");
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
             for order in self.orders.drain(..) {
-                let result = find_robot_in_db(&conn, &order.model, &order.version);
+                let result = find_robot_in_db(&pool, &order.model, &order.version).await;
 
                 match result {
                     Ok(_) => {
@@ -117,7 +118,7 @@ impl OrderQueue {
             // Заменяем вектор заказов на вектор невыполненных заказов
             self.orders = pending_orders;
             // Освобождаем доступ к соединению с базой данных
-            drop(conn);
+            drop(pool);
             // Ждем заданный интервал времени
             sleep(Duration::from_secs(CHECK_INTERVAL)).await;
         }
@@ -144,7 +145,7 @@ pub async fn order_robot(
         return Err(axum::http::StatusCode::BAD_REQUEST);
     }
     // Создаем экземпляр очереди
-    let queue = Arc::new(Mutex::new(OrderQueue::new()));
+    let queue = Arc::new(Mutex::new(OrderQueue::new().await));
     // Получаем блокировку на очередь и добавляем заказ
     queue.lock().await.enqueue(order).await;
     // Запускаем задачу для обработки очереди
