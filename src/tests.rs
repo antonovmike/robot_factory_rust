@@ -13,6 +13,7 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
     use axum_test_helper::TestClient;
+    use sqlx::SqlitePool;
 
     #[tokio::test]
     async fn test_create_robot_valid() {
@@ -71,7 +72,7 @@ mod tests {
         let res = client.get("/robots/report").send().await;
         // Проверяем статус ответа - должен быть 200 OK
         assert_eq!(res.status(), StatusCode::OK);
-        // Тип содержимого ответа должен быть application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        // Тип ответа должен быть application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         assert_eq!(
             res.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -90,7 +91,7 @@ mod tests {
             .route("/robots/create", post(create_robot))
             .route("/robots/remove", post(remove_robot));
         let client = TestClient::new(app);
-    
+
         // Создаем робота с допустимыми значениями
         let robot = Robot {
             serial: "R1".to_string(),
@@ -98,14 +99,19 @@ mod tests {
             version: "V1".to_string(),
             created: "2023-10-04".to_string(),
         };
-        let _ = client.post("/robots/create").json(&robot).send().await;
 
-        let robot = Robot {
-            serial: "R1".to_string(),
-            model: "M1".to_string(),
-            version: "V1".to_string(),
-            created: "2023-10-04".to_string(),
-        };
+        // Добавляем робота в базу данных
+        let pool = SqlitePool::connect(DATABASE_NAME).await.unwrap();
+        let statement =
+            format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, $4)");
+        sqlx::query(&statement)
+            .bind(&robot.serial)
+            .bind(&robot.model)
+            .bind(&robot.version)
+            .bind(&robot.created)
+            .execute(&pool)
+            .await
+            .unwrap();
 
         let res = client.post("/robots/remove").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::OK);
@@ -113,10 +119,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_remove_robot_not_found() {
-        let app = Router::new()
-            .route("/robots/remove", post(remove_robot));
+        let app = Router::new().route("/robots/remove", post(remove_robot));
         let client = TestClient::new(app);
-    
+
         // Пытаемся удалить робота, которого нет в базе данных
         let non_existent_robot = Robot {
             serial: "R99".to_string(),
@@ -124,7 +129,11 @@ mod tests {
             version: "V1".to_string(),
             created: "2023-10-04".to_string(),
         };
-        let res = client.post("/robots/remove").json(&non_existent_robot).send().await;
+        let res = client
+            .post("/robots/remove")
+            .json(&non_existent_robot)
+            .send()
+            .await;
         assert_eq!(res.status(), StatusCode::NOT_FOUND);
     }
 }
