@@ -12,11 +12,11 @@ use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_NAME, SMTP_SENDER, SMTP_SERVER};
-use crate::structures::Customer;
+// use crate::structures::Customer;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
-    pub email: Customer,
+    pub email: String,
     // Проверяем, что модель и версия соответствуют шаблону [A-Za-z][0-9]
     #[validate(custom = "validate_model_version")]
     pub model: String,

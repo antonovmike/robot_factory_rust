@@ -51,7 +51,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     println!("Serial number: {serial_number}");
 
     // Создаем таблицу robots, если ее не существует
-    match setup_database() {
+    match setup_database().await {
         Ok(_) => (),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };

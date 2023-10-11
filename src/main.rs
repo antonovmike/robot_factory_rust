@@ -5,7 +5,7 @@ use axum::{
     Router, Server,
 };
 use axum_sqlite::*;
-use chrono::Local;
+// use chrono::Local;
 
 #[cfg(test)]
 mod tests;
@@ -18,14 +18,14 @@ mod report;
 mod structures;
 
 use constants::DATABASE_NAME;
-use db::*;
+// use db::*;
 use order::*;
 use report::*;
 use create::*;
 
 #[tokio::main]
 async fn main() {
-    amount_of_robots();
+    // amount_of_robots();
 
     // Создаем маршрутизатор
     let app = Router::new()
@@ -44,11 +44,11 @@ async fn main() {
         .unwrap();
 }
 
-fn amount_of_robots() {
-    let now = Local::now();
-    let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
-    match get_robots_by_date(&date) {
-        Ok(count) => println!("Total amount of robots on {date} is {count}"),
-        Err(e) => println!("Error: {}", e),
-    }
-}
+// fn amount_of_robots() {
+//     let now = Local::now();
+//     let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
+//     match get_robots_by_date(&date) {
+//         Ok(count) => println!("Total amount of robots on {date} is {count}"),
+//         Err(e) => println!("Error: {}", e),
+//     }
+// }
