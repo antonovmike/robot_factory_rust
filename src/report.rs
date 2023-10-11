@@ -62,13 +62,13 @@ fn create_excel_file(groups: HashMap<char, Vec<(String, String, i64)>>) -> std::
         write_data(sheet, value)?;
     }
 
-    workbook.save(PATH_TO_XLSX).unwrap();
+    workbook.save(PATH_TO_XLSX)?;
     Ok(())
 }
 
 fn write_headers(sheet: &mut Worksheet) -> std::result::Result<(), XlsxError> {
     for (i, header) in SHEET_HEADERS.iter().enumerate() {
-        sheet.write_string(0, i as u16, header.to_string()).unwrap();
+        sheet.write_string(0, i as u16, header.to_string())?;
     }
     Ok(())
 }
