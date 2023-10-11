@@ -27,7 +27,6 @@ use create::*;
 async fn main() {
     amount_of_robots().await;
 
-    // Создаем маршрутизатор
     let app = Router::new()
         .route("/robots/report", get(report_handler))
         .route("/robots/create", post(create_robot))
@@ -35,7 +34,6 @@ async fn main() {
         .route("/robots/remove", post(remove_robot))
         .layer(Database::new(DATABASE_NAME).unwrap());
 
-    // Запускаем сервер на локальном адресе
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
 
     Server::bind(&addr)

@@ -15,7 +15,6 @@ use tokio_util::io::ReaderStream;
 use crate::constants::{PATH_TO_XLSX, DATABASE_NAME, SHEET_HEADERS};
 
 async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
-    // Check if the file exists and delete it if it does
     if fs::metadata(PATH_TO_XLSX).is_ok() {
         fs::remove_file(PATH_TO_XLSX)?;
     }

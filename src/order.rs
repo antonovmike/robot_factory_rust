@@ -24,9 +24,7 @@ pub struct Order {
     pub version: String,
 }
 
-// Структура для представления очереди заказов
 pub struct OrderQueue {
-    // Вектор заказов
     pub orders: Vec<Order>,
     // Ссылка на соединение с базой данных
     pool: Arc<Mutex<SqlitePool>>,
@@ -44,18 +42,16 @@ async fn find_robot_in_db(pool: &SqlitePool, model: &str, version: &str) -> sqlx
 }
 
 impl OrderQueue {
-    // Метод для создания нового экземпляра очереди
     pub async fn new() -> Self {
-        // Открываем соединение с базой данных
         let pool = match SqlitePool::connect(DATABASE_NAME).await {
             Ok(pool) => pool,
             Err(err) => panic!("Failed to open database connection: {}", err),
         };
         // Оборачиваем соединение в Arc и Mutex для безопасного доступа из разных потоков
         let pool = Arc::new(Mutex::new(pool));
-        // Создаем пустой вектор заказов
+        
         let orders = Vec::new();
-        // Возвращаем новый экземпляр очереди
+        
         Self { orders, pool }
     }
 
@@ -85,7 +81,6 @@ impl OrderQueue {
     pub async fn process(&mut self) {
         // Запускаем бесконечный цикл
         loop {
-            // Получаем доступ к соединению с базой данных
             let pool = self.pool.lock().await;
             // Создаем пустой вектор для хранения заказов, которые еще не выполнены
             let mut pending_orders = Vec::new();
@@ -96,9 +91,8 @@ impl OrderQueue {
 
                 match result {
                     Ok(_) => {
-                        // Робот найден, выводим сообщение в терминал
                         println!("product is available");
-                        // Сообщение для заказчика
+                        
                         let message = format!(
                             "Добрый день!\n\
                             Недавно вы интересовались нашим роботом модели {}, версии {}.\n\
@@ -107,10 +101,8 @@ impl OrderQueue {
                         );
                         send_email("customer@test.org", &message).unwrap();
                         println!("{}", message);
-                        // Заказ обратно в вектор, так как он выполнен
                     }
                     Err(_) => {
-                        // Робот не найден, добавляем заказ в вектор для дальнейшей обработки
                         pending_orders.push(order);
                     }
                 }
@@ -119,18 +111,17 @@ impl OrderQueue {
             self.orders = pending_orders;
             // Освобождаем доступ к соединению с базой данных
             drop(pool);
-            // Ждем заданный интервал времени
+
             sleep(Duration::from_secs(CHECK_INTERVAL)).await;
         }
     }
 }
 
 fn validate_model_version(value: &str) -> Result<(), ValidationError> {
-    // Создаем регулярное выражение для проверки строки
+    // Регулярное выражение для проверки строки
     let re = regex::Regex::new(r"^[A-Za-z][0-9]$").unwrap();
-    // Проверяем, что строка соответствует регулярному выражению
+
     if !re.is_match(value) {
-        // Возвращаем ошибку с кодом и сообщением
         println!("Invalid model version");
         return Err(ValidationError::new("invalid_model_version"));
     }
@@ -144,7 +135,7 @@ pub async fn order_robot(
     if order.validate().is_err() {
         return Err(axum::http::StatusCode::BAD_REQUEST);
     }
-    // Создаем экземпляр очереди
+
     let queue = Arc::new(Mutex::new(OrderQueue::new().await));
     // Получаем блокировку на очередь и добавляем заказ
     queue.lock().await.enqueue(order).await;

@@ -6,7 +6,6 @@ use crate::db::validate_model_version;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Customer {
-    // Проверяем, что email имеет правильный формат
     #[validate(email)]
     email: String,
 }

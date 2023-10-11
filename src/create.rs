@@ -16,7 +16,6 @@ pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> 
     Ok(new_serial)
 }
 
-// Проверяем данные на валидность
 fn validate_robot(robot: &Robot) -> Result<(), StatusCode> {
     if robot.validate().is_err() {
         Err(StatusCode::BAD_REQUEST)
@@ -25,7 +24,6 @@ fn validate_robot(robot: &Robot) -> Result<(), StatusCode> {
     }
 }
 
-// Открываем соединение с базой данных
 async fn open_database() -> Result<SqlitePool, StatusCode> {
     match SqlitePool::connect(DATABASE_NAME).await {
         Ok(pool) => Ok(pool),
@@ -46,12 +44,11 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     }
     println!("Serial number: {serial_number}");
 
-    // Создаем таблицу robots, если ее не существует
     match setup_database().await {
         Ok(_) => (),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
-    // Формируем запрос на вставку данных о роботе
+
     let statement =
         format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, $4)");
     // Выполняем запрос и возвращаем статус
