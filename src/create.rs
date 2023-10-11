@@ -1,23 +1,19 @@
-use std::path::Path;
-
 use axum::{http::StatusCode, Json};
-use rusqlite::{params, Connection, Result};
+use sqlx::sqlite::SqlitePool;
 use validator::Validate;
 
 use crate::constants::DATABASE_NAME;
 use crate::db::setup_database;
 use crate::structures::Robot;
 
-pub fn generate_serial_number(model: &str) -> Result<String, rusqlite::Error> {
-    let conn = Connection::open(DATABASE_NAME)?;
+pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
+    let pool = SqlitePool::connect(DATABASE_NAME).await?;
 
     let sql = "SELECT COUNT(*) as count FROM robots WHERE model = ?";
-    let mut stmt = conn.prepare(&sql)?;
-    
-    let max_serial: Option<i32> = stmt.query_row(params![model], |row| row.get(0))?;
+    let max_serial: Option<i64> = sqlx::query_scalar(sql).bind(model).fetch_one(&pool).await?;
     let new_serial = format!("{}{:04}", model, max_serial.unwrap_or(0) + 1);
-    
-    Ok(new_serial)    
+
+    Ok(new_serial)
 }
 
 // Проверяем данные на валидность
@@ -30,9 +26,9 @@ fn validate_robot(robot: &Robot) -> Result<(), StatusCode> {
 }
 
 // Открываем соединение с базой данных
-fn open_database() -> Result<Connection, StatusCode> {
-    match Connection::open(Path::new(DATABASE_NAME)) {
-        Ok(conn) => Ok(conn),
+async fn open_database() -> Result<SqlitePool, StatusCode> {
+    match SqlitePool::connect(DATABASE_NAME).await {
+        Ok(pool) => Ok(pool),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
@@ -40,11 +36,11 @@ fn open_database() -> Result<Connection, StatusCode> {
 pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     validate_robot(&robot)?;
 
-    let conn = open_database()?;
+    let pool = open_database().await?;
 
     let serial_number;
     if robot.serial == "0" {
-        serial_number = generate_serial_number(&robot.model).unwrap();
+        serial_number = generate_serial_number(&robot.model).await.unwrap();
     } else {
         serial_number = robot.serial
     }
@@ -56,12 +52,17 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
     // Формируем запрос на вставку данных о роботе
-    let statement = format!(
-        "INSERT INTO robots (serial, model, version, created) VALUES ('{}', '{}', '{}', '{}')",
-        &serial_number, &robot.model, &robot.version, &robot.created
-    );
+    let statement =
+        format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, $4)");
     // Выполняем запрос и возвращаем статус
-    match conn.execute(&statement, []) {
+    match sqlx::query(&statement)
+        .bind(&serial_number)
+        .bind(&robot.model)
+        .bind(&robot.version)
+        .bind(&robot.created)
+        .execute(&pool)
+        .await
+    {
         Ok(_) => Ok(StatusCode::CREATED),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
@@ -70,16 +71,19 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     validate_robot(&robot)?;
 
-    let conn = open_database()?;
+    let pool = open_database().await?;
 
-    let statement = format!(
-        "DELETE FROM robots WHERE serial = '{}' AND model = '{}' AND version = '{}'",
-        &robot.serial, &robot.model, &robot.version
-    );
-    
-    match conn.execute(&statement, []) {
-        Ok(rows_affected) => {
-            if rows_affected > 0 {
+    let statement = format!("DELETE FROM robots WHERE serial = $1 AND model = $2 AND version = $3");
+
+    match sqlx::query(&statement)
+        .bind(&robot.serial)
+        .bind(&robot.model)
+        .bind(&robot.version)
+        .execute(&pool)
+        .await
+    {
+        Ok(result) => {
+            if result.rows_affected() > 0 {
                 println!("Robot has been removed");
                 Ok(StatusCode::OK)
             } else {
