@@ -8,21 +8,20 @@ use axum::{
     response::IntoResponse,
 };
 use http::header::CONTENT_TYPE;
-use rusqlite::Result;
 use rust_xlsxwriter::{Workbook, Worksheet, XlsxError};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
 use crate::constants::{PATH_TO_XLSX, DATABASE_NAME, SHEET_HEADERS};
 
-fn create_xlsx() -> Result<(), anyhow::Error> {
+async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     // Check if the file exists and delete it if it does
     if fs::metadata(PATH_TO_XLSX).is_ok() {
         fs::remove_file(PATH_TO_XLSX)?;
     }
 
-    let conn = rusqlite::Connection::open(DATABASE_NAME)?;
-    let robots = fetch_robots(&conn)?;
+    let pool = sqlx::SqlitePool::connect(DATABASE_NAME).await?;
+    let robots = fetch_robots(&pool).await?;
 
     let groups = group_robots_by_model(robots);
     create_excel_file(groups).unwrap();
@@ -30,19 +29,15 @@ fn create_xlsx() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
-fn fetch_robots(conn: &rusqlite::Connection) -> rusqlite::Result<Vec<(String, String, i64)>> {
-    let mut stmt = conn.prepare(
+async fn fetch_robots(pool: &sqlx::SqlitePool) -> sqlx::Result<Vec<(String, String, i64)>> {
+    let robots: Vec<(String, String, i64)> = sqlx::query_as(
         "SELECT model, version, COUNT(*) as count FROM robots 
         WHERE created >= date('now', '-7 day') GROUP BY model, version",
-    )?;
-    let robots_iter = stmt.query_map([], |row| {
-        Ok((
-            row.get::<_, String>(0)?, // model
-            row.get::<_, String>(1)?, // version
-            row.get::<_, i64>(2)?,    // count
-        ))
-    })?;
-    robots_iter.collect()
+    )
+    .fetch_all(pool)
+    .await?;
+    
+    Ok(robots)
 }
 
 fn group_robots_by_model(robots: Vec<(String, String, i64)>) -> HashMap<char, Vec<(String, String, i64)>> {
@@ -57,7 +52,7 @@ fn group_robots_by_model(robots: Vec<(String, String, i64)>) -> HashMap<char, Ve
     groups
 }
 
-fn create_excel_file(groups: HashMap<char, Vec<(String, String, i64)>>) -> Result<(), Box<dyn std::error::Error>> {
+fn create_excel_file(groups: HashMap<char, Vec<(String, String, i64)>>) -> std::result::Result<(), Box<dyn std::error::Error>> {
     let mut workbook = Workbook::new();
 
     for (key, value) in &groups {
@@ -71,14 +66,14 @@ fn create_excel_file(groups: HashMap<char, Vec<(String, String, i64)>>) -> Resul
     Ok(())
 }
 
-fn write_headers(sheet: &mut Worksheet) -> Result<(), XlsxError> {
+fn write_headers(sheet: &mut Worksheet) -> std::result::Result<(), XlsxError> {
     for (i, header) in SHEET_HEADERS.iter().enumerate() {
         sheet.write_string(0, i as u16, header.to_string()).unwrap();
     }
     Ok(())
 }
 
-fn write_data(sheet: &mut Worksheet, data: &[(String, String, i64)]) -> Result<(), Box<dyn std::error::Error>> {
+fn write_data(sheet: &mut Worksheet, data: &[(String, String, i64)]) -> std::result::Result<(), Box<dyn std::error::Error>> {
     for (i, (model, version, count)) in data.iter().enumerate() {
         sheet.write_string((i + 1) as u32, 0, model)?;
         sheet.write_string((i + 1) as u32, 1, version)?;
@@ -87,9 +82,8 @@ fn write_data(sheet: &mut Worksheet, data: &[(String, String, i64)]) -> Result<(
     Ok(())
 }
 
-
-pub async fn report_handler() -> Result<impl IntoResponse, (StatusCode, String)> {
-    match tokio::task::spawn(async { create_xlsx() }).await {
+pub async fn report_handler() -> std::result::Result<impl IntoResponse, (StatusCode, String)> {
+    match tokio::task::spawn(create_xlsx()).await {
         Ok(Ok(())) => (),
         Ok(Err(err)) => {
             return Err((
