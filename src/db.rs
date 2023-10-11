@@ -23,20 +23,20 @@ pub async fn setup_database() -> Result<SqlitePool, Error> {
     Ok(pool)
 }
 
-// pub fn get_robots_by_date(date: &str) -> Result<i64, rusqlite::Error> {
-//     // Открываем соединение с базой данных
-//     let conn = Connection::open(Path::new("db.sqlite3"))?;
-//     // Формируем запрос на выборку суммы всех роботов до даты и времени создания
-//     let statement = format!(
-//         "SELECT COUNT(*) FROM robots 
-//     WHERE created <= datetime('{}')",
-//         date
-//     );
-//     // Выполняем запрос и получаем одно число из первой строки и первого столбца
-//     let count: i64 = conn.query_row(&statement, [], |row| row.get(0))?;
-//     // Возвращаем количество роботов
-//     Ok(count)
-// }
+pub async fn get_robots_by_date(date: &str) -> Result<i64, sqlx::Error> {
+    // Открываем соединение с базой данных
+    let pool = SqlitePool::connect(&format!("sqlite://{}", DATABASE_NAME)).await?;
+    // Формируем запрос на выборку суммы всех роботов до даты и времени создания
+    let count: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM robots WHERE created <= datetime(?)",
+    )
+    .bind(date)
+    .fetch_one(&pool)
+    .await?;
+
+    // Возвращаем количество роботов
+    Ok(count.0)
+}
 
 pub fn validate_model_version(value: &str) -> Result<(), ValidationError> {
     // Создаем регулярное выражение для проверки строки
