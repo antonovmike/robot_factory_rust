@@ -19,9 +19,9 @@ mod structures;
 
 use constants::DATABASE_NAME;
 use db::get_robots_by_date;
-use order::*;
-use report::*;
-use create::*;
+use order::order_robot;
+use report::report_handler;
+use create::{create_robot, remove_robot};
 
 #[tokio::main]
 async fn main() {
