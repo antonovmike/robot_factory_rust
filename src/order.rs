@@ -1,5 +1,5 @@
-use std::time::Duration;
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::extract::Json;
 use lettre::transport::smtp::response::Response;
@@ -31,8 +31,9 @@ pub struct OrderQueue {
 
 // Формируем запрос на поиск робота по модели и версии
 // Выполняем запрос и получаем результат
-async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i64> {
+async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i32> {
     let sql = "SELECT * FROM robots WHERE model = $1 AND version = $2";
+
     sqlx::query_scalar(sql)
         .bind(model)
         .bind(version)
@@ -48,9 +49,9 @@ impl OrderQueue {
         };
         // Оборачиваем соединение в Arc и Mutex для безопасного доступа из разных потоков
         let pool = Arc::new(Mutex::new(pool));
-        
+
         let orders = Vec::new();
-        
+
         Self { orders, pool }
     }
 
@@ -84,20 +85,26 @@ impl OrderQueue {
 
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
             for order in self.orders.drain(..) {
-                println!("LOOP\t{:?}\n{:?}-{:?}", &pool, &order.model, &order.version);
+                // println!("LOOP\t{:?}\n{:?}-{:?}", &pool, &order.model, &order.version);
                 let result = find_robot_in_db(&pool, &order.model, &order.version).await;
-
+                // println!("result {:?}", result);
                 match result {
                     Ok(_) => {
                         println!("product is available");
-                        
+
                         let message = format!(
                             "Добрый день!\n\
                             Недавно вы интересовались нашим роботом модели {}, версии {}.\n\
                             Этот робот теперь в наличии. Если вам подходит этот вариант - пожалуйста, свяжитесь с нами",
                             &order.model, &order.version
                         );
-                        send_email("customer@test.org", &message).unwrap();
+                        // send_email("customer@test.org", &message).unwrap();
+                        // send_email("customer@test.org", &message).expect("Failed to send email");
+                        // match send_email("customer@test.org", &message) {
+                        //     Ok(_) => println!("Email sent successfully"),
+                        //     Err(err) => println!("Failed to send email: {}", err),
+                        // }
+
                         println!("{}", message);
                     }
                     Err(_) => {
