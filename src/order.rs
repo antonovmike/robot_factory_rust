@@ -5,13 +5,13 @@ use axum::extract::Json;
 use lettre::transport::smtp::response::Response;
 use lettre::{Message, SmtpTransport, Transport};
 use serde::{Deserialize, Serialize};
-use sqlx::sqlite::SqlitePool;
+use sqlx::postgres::PgPool;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
-use crate::constants::{CHECK_INTERVAL, DATABASE_NAME, SMTP_SENDER, SMTP_SERVER};
+use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
 // use crate::structures::Customer;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
@@ -27,12 +27,12 @@ pub struct Order {
 pub struct OrderQueue {
     pub orders: Vec<Order>,
     // Ссылка на соединение с базой данных
-    pool: Arc<Mutex<SqlitePool>>,
+    pool: Arc<Mutex<PgPool>>,
 }
 
 // Формируем запрос на поиск робота по модели и версии
 // Выполняем запрос и получаем результат
-async fn find_robot_in_db(pool: &SqlitePool, model: &str, version: &str) -> sqlx::Result<i64> {
+async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i64> {
     let sql = "SELECT * FROM robots WHERE model = $1 AND version = $2";
     sqlx::query_scalar(sql)
         .bind(model)
@@ -43,7 +43,7 @@ async fn find_robot_in_db(pool: &SqlitePool, model: &str, version: &str) -> sqlx
 
 impl OrderQueue {
     pub async fn new() -> Self {
-        let pool = match SqlitePool::connect(DATABASE_NAME).await {
+        let pool = match PgPool::connect(DATABASE_URL).await {
             Ok(pool) => pool,
             Err(err) => panic!("Failed to open database connection: {}", err),
         };

@@ -12,14 +12,14 @@ use rust_xlsxwriter::{Workbook, Worksheet, XlsxError};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::constants::{PATH_TO_XLSX, DATABASE_NAME, SHEET_HEADERS};
+use crate::constants::{PATH_TO_XLSX, DATABASE_URL, SHEET_HEADERS};
 
 async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     if fs::metadata(PATH_TO_XLSX).is_ok() {
         fs::remove_file(PATH_TO_XLSX)?;
     }
 
-    let pool = sqlx::SqlitePool::connect(DATABASE_NAME).await?;
+    let pool = sqlx::PgPool::connect(DATABASE_URL).await?;
     let robots = fetch_robots(&pool).await?;
 
     let groups = group_robots_by_model(robots);
@@ -28,7 +28,7 @@ async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     Ok(())
 }
 
-async fn fetch_robots(pool: &sqlx::SqlitePool) -> sqlx::Result<Vec<(String, String, i64)>> {
+async fn fetch_robots(pool: &sqlx::PgPool) -> sqlx::Result<Vec<(String, String, i64)>> {
     let robots: Vec<(String, String, i64)> = sqlx::query_as(
         "SELECT model, version, COUNT(*) as count FROM robots 
         WHERE created >= date('now', '-7 day') GROUP BY model, version",

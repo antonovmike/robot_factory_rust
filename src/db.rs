@@ -1,32 +1,41 @@
 use regex::Regex;
-use sqlx::{sqlite::SqlitePool, Error, Executor};
+use sqlx::{postgres::PgPool, Error, Executor};
 use validator::ValidationError;
 
-use crate::constants::DATABASE_NAME;
+use crate::constants::DATABASE_URL;
 
-pub async fn setup_database() -> Result<SqlitePool, Error> {
-    // Создаем пул соединений с базой данных
-    let pool = SqlitePool::connect(&format!("sqlite://{}", DATABASE_NAME)).await?;
-    // Запрос на создание таблицы, если она не существует
+pub async fn setup_database() -> Result<PgPool, Error> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     pool.execute(
         "CREATE TABLE IF NOT EXISTS robots (
-        id INTEGER PRIMARY KEY,
+        id SERIAL PRIMARY KEY,
         serial TEXT NOT NULL,
         model TEXT NOT NULL,
         version TEXT NOT NULL,
-        created TEXT NOT NULL
+        created TIMESTAMP NOT NULL
     )",
     )
     .await?;
+    // sqlx::query(
+    //     "CREATE TABLE IF NOT EXISTS robots (
+    //     id SERIAL PRIMARY KEY,
+    //     serial TEXT NOT NULL,
+    //     model TEXT NOT NULL,
+    //     version TEXT NOT NULL,
+    //     created TIMESTAMP NOT NULL)",
+    // )
+    // .execute(&pool)
+    // .await
+    // .unwrap();
+
     Ok(pool)
 }
 
 pub async fn get_robots_by_date(date: &str) -> Result<i64, sqlx::Error> {
-    // Открываем соединение с базой данных
-    let pool = SqlitePool::connect(&format!("sqlite://{}", DATABASE_NAME)).await?;
-    // Формируем запрос на выборку суммы всех роботов до даты и времени создания
+    let pool = PgPool::connect(DATABASE_URL).await?;
+    // let count: (i64,) = sqlx::query_as(r"SELECT COUNT(*) FROM robots WHERE created <= $1")
     let count: (i64,) = sqlx::query_as(
-        "SELECT COUNT(*) FROM robots WHERE created <= datetime(?)",
+        r"SELECT COUNT(*) FROM robots WHERE created <= TO_TIMESTAMP($1, 'YYYY-MM-DD HH24:MI:SS')",
     )
     .bind(date)
     .fetch_one(&pool)
@@ -36,7 +45,6 @@ pub async fn get_robots_by_date(date: &str) -> Result<i64, sqlx::Error> {
 }
 
 pub fn validate_model_version(value: &str) -> Result<(), ValidationError> {
-    // Регулярное выражение для проверки строки
     let re = Regex::new(r"^[A-Za-z][0-9]$").unwrap();
 
     if !re.is_match(value) {
