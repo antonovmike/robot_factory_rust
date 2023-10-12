@@ -84,9 +84,10 @@ impl OrderQueue {
             let pool = self.pool.lock().await;
             // Создаем пустой вектор для хранения заказов, которые еще не выполнены
             let mut pending_orders = Vec::new();
-            println!("LOOP\t{pending_orders:?}");
+
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
             for order in self.orders.drain(..) {
+                println!("LOOP\t{:?}\n{:?}-{:?}", &pool, &order.model, &order.version);
                 let result = find_robot_in_db(&pool, &order.model, &order.version).await;
 
                 match result {

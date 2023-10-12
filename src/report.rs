@@ -3,16 +3,13 @@ use std::fs;
 
 use axum::body::StreamBody;
 use axum::http::{self, HeaderMap, HeaderValue};
-use axum::{
-    http::StatusCode,
-    response::IntoResponse,
-};
+use axum::{http::StatusCode, response::IntoResponse};
 use http::header::CONTENT_TYPE;
 use rust_xlsxwriter::{Workbook, Worksheet, XlsxError};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::constants::{PATH_TO_XLSX, DATABASE_URL, SHEET_HEADERS};
+use crate::constants::{DATABASE_URL, PATH_TO_XLSX, SHEET_HEADERS};
 
 async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     if fs::metadata(PATH_TO_XLSX).is_ok() {
@@ -29,17 +26,25 @@ async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
 }
 
 async fn fetch_robots(pool: &sqlx::PgPool) -> sqlx::Result<Vec<(String, String, i64)>> {
+    // let robots: Vec<(String, String, i64)> = sqlx::query_as(
+    //     "SELECT model, version, COUNT(*) as count FROM robots
+    //     WHERE created >= date('now', '-7 day') GROUP BY model, version",
+    // )
+    // .fetch_all(pool)
+    // .await?;
     let robots: Vec<(String, String, i64)> = sqlx::query_as(
-        "SELECT model, version, COUNT(*) as count FROM robots 
-        WHERE created >= date('now', '-7 day') GROUP BY model, version",
+        "SELECT model, version, COUNT(*) as count FROM robots
+        WHERE created >= current_date - interval '7 day' GROUP BY model, version",
     )
     .fetch_all(pool)
     .await?;
-    
+
     Ok(robots)
 }
 
-fn group_robots_by_model(robots: Vec<(String, String, i64)>) -> HashMap<char, Vec<(String, String, i64)>> {
+fn group_robots_by_model(
+    robots: Vec<(String, String, i64)>,
+) -> HashMap<char, Vec<(String, String, i64)>> {
     let mut groups: HashMap<char, Vec<(String, String, i64)>> = HashMap::new();
     for (model, version, count) in robots {
         let first_char = model.chars().next().unwrap();
@@ -51,7 +56,9 @@ fn group_robots_by_model(robots: Vec<(String, String, i64)>) -> HashMap<char, Ve
     groups
 }
 
-fn create_excel_file(groups: HashMap<char, Vec<(String, String, i64)>>) -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn create_excel_file(
+    groups: HashMap<char, Vec<(String, String, i64)>>,
+) -> std::result::Result<(), Box<dyn std::error::Error>> {
     let mut workbook = Workbook::new();
 
     for (key, value) in &groups {
@@ -72,7 +79,10 @@ fn write_headers(sheet: &mut Worksheet) -> std::result::Result<(), XlsxError> {
     Ok(())
 }
 
-fn write_data(sheet: &mut Worksheet, data: &[(String, String, i64)]) -> std::result::Result<(), Box<dyn std::error::Error>> {
+fn write_data(
+    sheet: &mut Worksheet,
+    data: &[(String, String, i64)],
+) -> std::result::Result<(), Box<dyn std::error::Error>> {
     for (i, (model, version, count)) in data.iter().enumerate() {
         sheet.write_string((i + 1) as u32, 0, model)?;
         sheet.write_string((i + 1) as u32, 1, version)?;

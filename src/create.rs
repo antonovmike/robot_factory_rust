@@ -89,7 +89,6 @@ pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 
     let pool = open_database().await?;
 
-    // let statement = format!("DELETE FROM robots WHERE serial = $1 AND model = $2 AND version = $3");
     let statement = format!("DELETE FROM robots WHERE serial = $1");
 
     match sqlx::query(&statement)
