@@ -34,7 +34,6 @@ async fn main() {
         .route("/robots/create", post(create_robot))
         .route("/robots/order", post(order_robot))
         .route("/robots/remove", post(remove_robot))
-        // .layer(Database::new(DATABASE_URL).unwrap());
         .layer(Extension(pool));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));

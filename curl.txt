@@ -19,4 +19,4 @@ createdb -U postgres -W robots
 pg_ctl restart
 
 
-ORDER and REPORT don't work
+ORDER doesn't work

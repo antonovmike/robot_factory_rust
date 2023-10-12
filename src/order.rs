@@ -12,7 +12,6 @@ use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
-// use crate::structures::Customer;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
@@ -65,11 +64,9 @@ impl OrderQueue {
         // Проверяем, что результат не пустой
         match result {
             Ok(_) => {
-                // Робот найден, выводим сообщение в терминал
                 println!("product is in stock");
             }
             Err(_) => {
-                // Робот не найден, выводим сообщение в терминал
                 println!("product is out of stock");
                 // Добавляем заказ в вектор
                 self.orders.push(order);

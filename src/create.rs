@@ -10,7 +10,6 @@ use crate::structures::Robot;
 pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
     let pool = PgPool::connect(DATABASE_URL).await?;
 
-    // let sql = "SELECT COUNT(*) as count FROM robots WHERE model = ?";
     let sql = "SELECT COUNT(*) as count FROM robots WHERE model = $1";
     let max_serial: Option<i64> = sqlx::query_scalar(sql).bind(model).fetch_one(&pool).await?;
     let new_serial = format!("{}{:03}", model, max_serial.unwrap_or(0) + 1);
@@ -58,7 +57,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     // An error occurred while inserting data into the database: error returned from database: column "created" is of type timestamp without time zone but expression is of type text
     // let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '2023-09-06 11:09:22')");
     let current_date = Utc::now().to_rfc3339();
-    let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{}')", current_date);
+    let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
     // Выполняем запрос и возвращаем статус
     match sqlx::query(&statement)
         .bind(&serial_number)
@@ -72,9 +71,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
             pool.close().await;
             Ok(StatusCode::CREATED)
         }
-        // Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
         Err(e) => {
-            // Выводим информацию об ошибке и вызываем панику
             eprintln!(
                 "An error occurred while inserting data into the database: {}",
                 e

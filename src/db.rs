@@ -33,7 +33,7 @@ pub async fn setup_database() -> Result<PgPool, Error> {
 
 pub async fn get_robots_by_date(date: &str) -> Result<i64, sqlx::Error> {
     let pool = PgPool::connect(DATABASE_URL).await?;
-    // let count: (i64,) = sqlx::query_as(r"SELECT COUNT(*) FROM robots WHERE created <= $1")
+
     let count: (i64,) = sqlx::query_as(
         r"SELECT COUNT(*) FROM robots WHERE created <= TO_TIMESTAMP($1, 'YYYY-MM-DD HH24:MI:SS')",
     )
