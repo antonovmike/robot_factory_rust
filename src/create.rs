@@ -11,7 +11,7 @@ pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> 
 
     let sql = "SELECT COUNT(*) as count FROM robots WHERE model = ?";
     let max_serial: Option<i64> = sqlx::query_scalar(sql).bind(model).fetch_one(&pool).await?;
-    let new_serial = format!("{}{:04}", model, max_serial.unwrap_or(0) + 1);
+    let new_serial = format!("{}{:03}", model, max_serial.unwrap_or(0) + 1);
 
     Ok(new_serial)
 }
@@ -70,7 +70,8 @@ pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 
     let pool = open_database().await?;
 
-    let statement = format!("DELETE FROM robots WHERE serial = $1 AND model = $2 AND version = $3");
+    // let statement = format!("DELETE FROM robots WHERE serial = $1 AND model = $2 AND version = $3");
+    let statement = format!("DELETE FROM robots WHERE serial = $1");
 
     match sqlx::query(&statement)
         .bind(&robot.serial)
