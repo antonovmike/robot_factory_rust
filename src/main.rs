@@ -8,8 +8,8 @@ use axum::extract::Extension;
 use chrono::Local;
 use sqlx::postgres::PgPool;
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 mod constants;
 mod create;

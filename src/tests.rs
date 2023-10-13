@@ -13,7 +13,8 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
     use axum_test_helper::TestClient;
-    use sqlx::SqlitePool;
+    // use sqlx::SqlitePool;
+    use sqlx::postgres::PgPool;
 
     #[tokio::test]
     async fn test_create_robot_valid() {
@@ -94,16 +95,16 @@ mod tests {
 
         // Создаем робота с допустимыми значениями
         let robot = Robot {
-            serial: "R1".to_string(),
+            serial: "M10M1".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "2023-10-04".to_string(),
+            created: "2023-10-04 12:34:56".to_string(),
         };
 
         // Добавляем робота в базу данных
-        let pool = SqlitePool::connect(DATABASE_NAME).await.unwrap();
+        let pool = PgPool::connect(DATABASE_URL).await.unwrap();
         let statement =
-            format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, $4)");
+            format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, to_timestamp($4))");
         sqlx::query(&statement)
             .bind(&robot.serial)
             .bind(&robot.model)
