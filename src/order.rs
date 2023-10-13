@@ -1,3 +1,4 @@
+use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -24,7 +25,7 @@ pub struct Order {
 }
 
 pub struct OrderQueue {
-    pub orders: Vec<Order>,
+    pub orders: std::collections::VecDeque<Order>,
     // Ссылка на соединение с базой данных
     pool: Arc<Mutex<PgPool>>,
 }
@@ -50,7 +51,7 @@ impl OrderQueue {
         // Оборачиваем соединение в Arc и Mutex для безопасного доступа из разных потоков
         let pool = Arc::new(Mutex::new(pool));
 
-        let orders = Vec::new();
+        let orders = VecDeque::new();
 
         Self { orders, pool }
     }
@@ -70,7 +71,8 @@ impl OrderQueue {
             Err(_) => {
                 println!("product is out of stock");
                 // Добавляем заказ в вектор
-                self.orders.push(order);
+                // self.orders.push(order);
+                self.orders.push_back(order);
             }
         }
     }
@@ -81,13 +83,12 @@ impl OrderQueue {
         loop {
             let pool = self.pool.lock().await;
             // Создаем пустой вектор для хранения заказов, которые еще не выполнены
-            let mut pending_orders = Vec::new();
+            let mut pending_orders = VecDeque::new();
 
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
-            for order in self.orders.drain(..) {
-                // println!("LOOP\t{:?}\n{:?}-{:?}", &pool, &order.model, &order.version);
+            for _ in 0..self.orders.len() {
+                let order = self.orders.pop_front().unwrap();
                 let result = find_robot_in_db(&pool, &order.model, &order.version).await;
-                // println!("result {:?}", result);
                 match result {
                     Ok(_) => {
                         println!("product is available");
@@ -98,17 +99,13 @@ impl OrderQueue {
                             Этот робот теперь в наличии. Если вам подходит этот вариант - пожалуйста, свяжитесь с нами",
                             &order.model, &order.version
                         );
-                        // send_email("customer@test.org", &message).unwrap();
-                        // send_email("customer@test.org", &message).expect("Failed to send email");
-                        // match send_email("customer@test.org", &message) {
-                        //     Ok(_) => println!("Email sent successfully"),
-                        //     Err(err) => println!("Failed to send email: {}", err),
-                        // }
+
+                        send_email("customer@test.org", &message).expect("Failed to send email");
 
                         println!("{}", message);
                     }
                     Err(_) => {
-                        pending_orders.push(order);
+                        pending_orders.push_back(order);
                     }
                 }
             }

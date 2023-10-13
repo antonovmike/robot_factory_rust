@@ -2,11 +2,11 @@ DOWNLOAD WEEKLY REPORT
 w3m http://127.0.0.1:8000/robots/report
 
 CREATE
-curl -X POST -H "Content-Type: application/json" -d '{"serial":"0","model":"C2","version":"B4","created":"2023-09-06 11:09:22"}' http://127.0.0.1:8000/robots/create
+curl -X POST -H "Content-Type: application/json" -d '{"serial":"0","model":"C2","version":"B7","created":"2023-09-06 11:09:22"}' http://127.0.0.1:8000/robots/create
 ORDER
-curl -X POST -H "Content-Type: application/json" -d '{"email": "test@example.com", "model": "C2", "version": "B4"}' http://127.0.0.1:8000/robots/order
+curl -X POST -H "Content-Type: application/json" -d '{"email": "test@example.com", "model": "C2", "version": "B7"}' http://127.0.0.1:8000/robots/order
 REMOVE
-curl -X POST -H "Content-Type: application/json" -d '{"serial":"A1001","model":"A1","version":"A1","created":"2023-10-06 11:09:22"}' http://127.0.0.1:8000/robots/remove
+curl -X POST -H "Content-Type: application/json" -d '{"serial":"C2007","model":"C2","version":"B7","created":"2023-10-06 11:09:22"}' http://127.0.0.1:8000/robots/remove
 
 
 Сбросить пароль
@@ -19,4 +19,4 @@ createdb -U postgres -W robots
 pg_ctl restart
 
 
-ORDER doesn't work
+Make each ORDER unique
