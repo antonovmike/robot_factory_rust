@@ -103,8 +103,9 @@ mod tests {
 
         // Добавляем робота в базу данных
         let pool = PgPool::connect(DATABASE_URL).await.unwrap();
-        let statement =
-            format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, to_timestamp($4))");
+        let statement = format!(
+            "INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, to_timestamp($4, 'YYYY-MM-DDTHH24:MI:SSOF'))"
+        );
         sqlx::query(&statement)
             .bind(&robot.serial)
             .bind(&robot.model)

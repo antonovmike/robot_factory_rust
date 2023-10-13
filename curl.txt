@@ -17,6 +17,3 @@ ALTER ROLE postgres WITH PASSWORD '123';
 createdb -U postgres -W robots
 
 pg_ctl restart
-
-
-Make each ORDER unique
