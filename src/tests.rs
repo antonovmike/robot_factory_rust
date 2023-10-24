@@ -13,6 +13,7 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
     use axum_test_helper::TestClient;
+    use chrono::Utc;
     use sqlx::postgres::PgPool;
 
     #[tokio::test]
@@ -24,7 +25,6 @@ mod tests {
             serial: "R1".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "0".to_string(),
         };
 
         let res = client.post("/robots/create").json(&robot).send().await;
@@ -40,7 +40,6 @@ mod tests {
             serial: "".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "0".to_string(),
         };
 
         let res = client.post("/robots/create").json(&robot).send().await;
@@ -56,7 +55,6 @@ mod tests {
             serial: "R1".to_string(),
             model: "123".to_string(),
             version: "V1".to_string(),
-            created: "2023-10-04".to_string(),
         };
 
         let res = client.post("/robots/create").json(&robot).send().await;
@@ -97,19 +95,16 @@ mod tests {
             serial: "M10M1".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "0".to_string(),
         };
 
         // Добавляем робота в базу данных
         let pool = PgPool::connect(DATABASE_URL).await.unwrap();
-        let statement = format!(
-            "INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, to_timestamp($4, 'YYYY-MM-DDTHH24:MI:SSOF'))"
-        );
+        let current_date = Utc::now().to_rfc3339();
+        let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
         sqlx::query(&statement)
             .bind(&robot.serial)
             .bind(&robot.model)
             .bind(&robot.version)
-            .bind(&robot.created)
             .execute(&pool)
             .await
             .unwrap();
@@ -128,7 +123,6 @@ mod tests {
             serial: "R99".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "2023-10-04".to_string(),
         };
         let res = client
             .post("/robots/remove")

@@ -29,5 +29,4 @@ pub struct Robot {
     pub model: String,
     #[validate(custom = "validate_model_version")]
     pub version: String,
-    pub created: String,
 }
