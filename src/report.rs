@@ -26,12 +26,6 @@ async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
 }
 
 async fn fetch_robots(pool: &sqlx::PgPool) -> sqlx::Result<Vec<(String, String, i64)>> {
-    // let robots: Vec<(String, String, i64)> = sqlx::query_as(
-    //     "SELECT model, version, COUNT(*) as count FROM robots
-    //     WHERE created >= date('now', '-7 day') GROUP BY model, version",
-    // )
-    // .fetch_all(pool)
-    // .await?;
     let robots: Vec<(String, String, i64)> = sqlx::query_as(
         "SELECT model, version, COUNT(*) as count FROM robots
         WHERE created >= current_date - interval '7 day' GROUP BY model, version",

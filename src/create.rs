@@ -49,13 +49,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         Ok(_) => (),
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
-    // FIX IT
-    // It does not work with $4, but works with hardcoded date like this
-    // The curl all the time is the same:
-    // curl -X POST -H "Content-Type: application/json" -d '{"serial":"0","model":"A1","version":"A1","created":"2023-09-06 11:09:22"}' http://127.0.0.1:8000/robots/create
-    // It worked with SQlite, nut with postgres:
-    // An error occurred while inserting data into the database: error returned from database: column "created" is of type timestamp without time zone but expression is of type text
-    // let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '2023-09-06 11:09:22')");
+
     let current_date = Utc::now().to_rfc3339();
     let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
     // Выполняем запрос и возвращаем статус
@@ -63,7 +57,6 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         .bind(&serial_number)
         .bind(&robot.model)
         .bind(&robot.version)
-        .bind(&robot.created)
         .execute(&pool)
         .await
     {
