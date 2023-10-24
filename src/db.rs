@@ -6,6 +6,7 @@ use crate::constants::DATABASE_URL;
 
 pub async fn setup_database() -> Result<PgPool, Error> {
     let pool = PgPool::connect(DATABASE_URL).await?;
+    
     pool.execute(
         "CREATE TABLE IF NOT EXISTS robots (
         id SERIAL PRIMARY KEY,
@@ -16,17 +17,30 @@ pub async fn setup_database() -> Result<PgPool, Error> {
     )",
     )
     .await?;
-    // sqlx::query(
-    //     "CREATE TABLE IF NOT EXISTS robots (
-    //     id SERIAL PRIMARY KEY,
-    //     serial TEXT NOT NULL,
-    //     model TEXT NOT NULL,
-    //     version TEXT NOT NULL,
-    //     created TIMESTAMP NOT NULL)",
-    // )
-    // .execute(&pool)
-    // .await
-    // .unwrap();
+
+    pool.execute(
+        "CREATE TABLE IF NOT EXISTS customers (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL UNIQUE,
+        login TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL
+        )",
+    )
+    .await?;
+
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        customer_id INTEGER NOT NULL,
+        robot_id INTEGER NOT NULL,
+        order_date TIMESTAMP NOT NULL,
+        CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers (id),
+        CONSTRAINT fk_robot FOREIGN KEY (robot_id) REFERENCES robots (id)
+        )",
+    )
+    .execute(&pool)
+    .await?;
 
     Ok(pool)
 }
