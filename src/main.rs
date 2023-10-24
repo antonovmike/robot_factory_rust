@@ -1,7 +1,6 @@
 use std::net::SocketAddr;
 
 use axum::extract::Extension;
-use axum::http;
 use axum::{
     routing::{get, post},
     Router, Server,
@@ -25,7 +24,7 @@ use create::{create_robot, remove_robot};
 use db::get_robots_by_date;
 use order::order_robot;
 use report::report_handler;
-use user::handle_create_customer;
+use user::create_customer;
 
 #[tokio::main]
 async fn main() {
@@ -37,7 +36,7 @@ async fn main() {
         .route("/robots/create", post(create_robot))
         .route("/robots/order", post(order_robot))
         .route("/robots/remove", post(remove_robot))
-        // .route("/user/create", post(handle_create_customer))
+        .route("/user/create", post(create_customer))
         .layer(Extension(pool));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));

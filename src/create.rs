@@ -73,8 +73,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         }
         Err(e) => {
             eprintln!(
-                "An error occurred while inserting data into the database: {}",
-                e
+                "An error occurred while inserting data into the database: {e}"
             );
             panic!("Database error");
         }

@@ -8,6 +8,8 @@ curl -X POST -H "Content-Type: application/json" -d '{"email": "test@example.com
 REMOVE
 curl -X POST -H "Content-Type: application/json" -d '{"serial":"C2007","model":"C2","version":"B7","created":"2023-10-06 11:09:22"}' http://127.0.0.1:8000/robots/remove
 
+CREATE USER
+curl -X POST -H "Content-Type: application/json" -d '{"name":"Mary_Smith", "email":"mary@mail.com", "login":"mary_1", "password":"pass1"}' http://localhost:8000/user/create
 
 Сбросить пароль
 sudo su postgres
