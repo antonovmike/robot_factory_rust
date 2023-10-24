@@ -6,8 +6,14 @@ use crate::db::validate_model_version;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Customer {
+    #[validate(length(min = 1))]
+    pub name: String,
     #[validate(email)]
-    email: String,
+    pub email: String,
+    #[validate(length(min = 3))]
+    pub login: String,
+    #[validate(length(min = 3))]
+    pub password: String,
 }
 
 struct _Order {

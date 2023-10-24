@@ -13,7 +13,6 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
     use axum_test_helper::TestClient;
-    // use sqlx::SqlitePool;
     use sqlx::postgres::PgPool;
 
     #[tokio::test]
@@ -25,7 +24,7 @@ mod tests {
             serial: "R1".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "2023-10-04".to_string(),
+            created: "0".to_string(),
         };
 
         let res = client.post("/robots/create").json(&robot).send().await;
@@ -41,7 +40,7 @@ mod tests {
             serial: "".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "2023-10-04".to_string(),
+            created: "0".to_string(),
         };
 
         let res = client.post("/robots/create").json(&robot).send().await;
@@ -98,7 +97,7 @@ mod tests {
             serial: "M10M1".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
-            created: "2023-10-04 12:34:56".to_string(),
+            created: "0".to_string(),
         };
 
         // Добавляем робота в базу данных

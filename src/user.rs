@@ -1,23 +1,10 @@
 use anyhow::Result;
 use axum::{extract::Json, http::StatusCode};
-use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use validator::Validate;
-use validator_derive::Validate;
 
 use crate::constants::DATABASE_URL;
-
-#[derive(Debug, Deserialize, Serialize, Validate)]
-pub struct Customer {
-    #[validate(length(min = 1))]
-    pub name: String,
-    #[validate(email)]
-    pub email: String,
-    #[validate(length(min = 3))]
-    pub login: String,
-    #[validate(length(min = 3))]
-    pub password: String,
-}
+use crate::structures::Customer;
 
 async fn open_database() -> Result<PgPool, StatusCode> {
     match PgPool::connect(DATABASE_URL).await {

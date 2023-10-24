@@ -11,11 +11,11 @@ curl -X POST -H "Content-Type: application/json" -d '{"serial":"C2007","model":"
 CREATE USER
 curl -X POST -H "Content-Type: application/json" -d '{"name":"Mary_Smith", "email":"mary@mail.com", "login":"mary_1", "password":"pass1"}' http://localhost:8000/user/create
 
-Сбросить пароль
+Reset password:
 sudo su postgres
 psql
 ALTER ROLE postgres WITH PASSWORD '123';
-Создать ДБ
+Create DB:
 createdb -U postgres -W robots
 
 pg_ctl restart
