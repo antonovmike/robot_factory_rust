@@ -6,7 +6,7 @@ use crate::constants::DATABASE_URL;
 
 pub async fn setup_database() -> Result<PgPool, Error> {
     let pool = PgPool::connect(DATABASE_URL).await?;
-    
+
     pool.execute(
         "CREATE TABLE IF NOT EXISTS robots (
         id SERIAL PRIMARY KEY,
@@ -14,7 +14,7 @@ pub async fn setup_database() -> Result<PgPool, Error> {
         model TEXT NOT NULL,
         version TEXT NOT NULL,
         created TIMESTAMP NOT NULL
-    )",
+        )",
     )
     .await?;
 
