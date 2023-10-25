@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::extract::{Json, Query};
+use axum::extract::Json;
 use lettre::transport::smtp::response::Response;
 use lettre::{Message, SmtpTransport, Transport};
 use serde::{Deserialize, Serialize};
@@ -17,14 +17,14 @@ use crate::db::check_credentials;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
-    pub email: String,
+    // pub email: String,
+    pub login: String,
+    pub password: String,
     // Проверяем, что модель и версия соответствуют шаблону [A-Za-z][0-9]
     #[validate(custom = "validate_model_version")]
     pub model: String,
     #[validate(custom = "validate_model_version")]
     pub version: String,
-    pub login: String,
-    pub password: String,
 }
 
 pub struct OrderQueue {
