@@ -13,6 +13,7 @@ use validator::{Validate, ValidationError};
 use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
+use crate::db::check_credentials;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
@@ -102,7 +103,8 @@ impl OrderQueue {
                             &order.model, &order.version
                         );
 
-                        let email_addr = order.email;
+                        let (login, password) = (order.login, order.password);
+                        let email_addr = check_credentials(&login, &password).await.unwrap().unwrap();
 
                         send_email(&email_addr, &message).expect("Failed to send email");
 
