@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::extract::Json;
+use axum::extract::{Json, Query};
 use lettre::transport::smtp::response::Response;
 use lettre::{Message, SmtpTransport, Transport};
 use serde::{Deserialize, Serialize};
@@ -22,6 +22,8 @@ pub struct Order {
     pub model: String,
     #[validate(custom = "validate_model_version")]
     pub version: String,
+    pub login: String,
+    pub password: String,
 }
 
 pub struct OrderQueue {
@@ -100,7 +102,9 @@ impl OrderQueue {
                             &order.model, &order.version
                         );
 
-                        send_email("customer@test.org", &message).expect("Failed to send email");
+                        let email_addr = order.email;
+
+                        send_email(&email_addr, &message).expect("Failed to send email");
 
                         println!("{}", message);
                     }
