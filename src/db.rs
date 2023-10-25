@@ -68,3 +68,17 @@ pub fn validate_model_version(value: &str) -> Result<(), ValidationError> {
 
     Ok(())
 }
+
+// Проверка логина и пароля в базе данных
+// Если найден - возвращаем email пользователя
+pub async fn check_credentials(login: &str, password: &str) -> Result<Option<String>, sqlx::Error> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
+
+    let sql = "SELECT email FROM customers WHERE login = $1 AND password = $2";
+
+    sqlx::query_scalar(sql)
+        .bind(login)
+        .bind(password)
+        .fetch_optional(&pool)
+        .await
+}
