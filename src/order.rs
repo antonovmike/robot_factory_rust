@@ -64,13 +64,6 @@ impl OrderQueue {
         // Получаем доступ к соединению с базой данных
         let pool = self.pool.lock().await;
 
-        let customer_name: String = sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
-            .bind(&order.login)
-            .fetch_one(&*pool)
-            .await
-            .unwrap();
-        println!("customer_name is {customer_name}");
-
         let result = find_robot_in_db(&pool, &order.model, &order.version).await;
         // Проверяем, что результат не пустой
         match result {
@@ -95,22 +88,29 @@ impl OrderQueue {
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
             for _ in 0..self.orders.len() {
                 let order = self.orders.pop_front().unwrap();
+
+                let customer_name: String = sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
+                    .bind(&order.login)
+                    .fetch_one(&*pool)
+                    .await
+                    .unwrap();
+
                 let result = find_robot_in_db(&pool, &order.model, &order.version).await;
                 match result {
                     Ok(_) => {
-                        println!("product is available");
+                        println!("Hello {customer_name} product is available");
 
                         let message = format!(
-                            "Добрый день!\n\
+                            "Добрый день, {}!\n\
                             Недавно вы интересовались нашим роботом модели {}, версии {}.\n\
                             Этот робот теперь в наличии. Если вам подходит этот вариант - пожалуйста, свяжитесь с нами",
-                            &order.model, &order.version
+                            customer_name, &order.model, &order.version
                         );
 
-                        let (login, password) = (order.login, order.password);
-                        let email_addr = check_credentials(&login, &password).await.unwrap().unwrap();
-
-                        send_email(&email_addr, &message).expect("Failed to send email");
+                        // This part of the code always returns an error
+                        // let (login, password) = (order.login, order.password);
+                        // let email_addr = check_credentials(&login, &password).await.unwrap().unwrap();
+                        // send_email(&email_addr, &message).expect("Failed to send email");
 
                         println!("{}", message);
                     }
