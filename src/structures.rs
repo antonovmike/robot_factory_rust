@@ -16,10 +16,10 @@ pub struct Customer {
     pub password: String,
 }
 
-struct _Order {
-    customer: Customer,
-    robot_serial: String,
-}
+// pub struct Order {
+//     customer: Customer,
+//     robot_serial: String,
+// }
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Robot {

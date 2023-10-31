@@ -15,6 +15,7 @@ mod constants;
 mod robot;
 mod db;
 mod order;
+mod processing;
 mod report;
 mod structures;
 mod user;
@@ -22,7 +23,7 @@ mod user;
 use constants::DATABASE_URL;
 use robot::{create_robot, remove_robot};
 use db::get_robots_by_date;
-use order::order_robot;
+use processing::order_robot;
 use report::report_handler;
 use user::create_customer;
 
