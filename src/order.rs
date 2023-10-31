@@ -9,15 +9,14 @@ use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use tokio::sync::Mutex;
 use tokio::time::sleep;
-use validator::{Validate, ValidationError};
+use validator::Validate;
 use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
-use crate::db::check_credentials;
+use crate::db::{check_credentials, validate_model_version};
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
-    // pub email: String,
     pub login: String,
     pub password: String,
     // Проверяем, что модель и версия соответствуют шаблону [A-Za-z][0-9]
@@ -74,7 +73,6 @@ impl OrderQueue {
             Err(_) => {
                 println!("product is out of stock");
                 // Добавляем заказ в вектор
-                // self.orders.push(order);
                 self.orders.push_back(order);
             }
         }
@@ -82,10 +80,9 @@ impl OrderQueue {
 
     // Метод для обработки очереди
     pub async fn process(&mut self) {
-        // Запускаем бесконечный цикл
         loop {
             let pool = self.pool.lock().await;
-            // Создаем пустой вектор для хранения заказов, которые еще не выполнены
+            // Вектор для хранения не выполненных заказов
             let mut pending_orders = VecDeque::new();
 
             // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
@@ -123,18 +120,6 @@ impl OrderQueue {
             sleep(Duration::from_secs(CHECK_INTERVAL)).await;
         }
     }
-}
-
-fn validate_model_version(value: &str) -> Result<(), ValidationError> {
-    // Регулярное выражение для проверки строки
-    let re = regex::Regex::new(r"^[A-Za-z][0-9]$").unwrap();
-
-    if !re.is_match(value) {
-        println!("Invalid model version");
-        return Err(ValidationError::new("invalid_model_version"));
-    }
-
-    Ok(())
 }
 
 pub async fn order_robot(
