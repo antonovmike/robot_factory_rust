@@ -17,7 +17,6 @@ use crate::db::{check_credentials, validate_model_version};
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Order {
-    pub customer_id: i32,
     pub login: String,
     pub password: String,
     // Проверяем, что модель и версия соответствуют шаблону [A-Za-z][0-9]
@@ -65,16 +64,12 @@ impl OrderQueue {
         // Получаем доступ к соединению с базой данных
         let pool = self.pool.lock().await;
 
-        let customer_name = sqlx::query_scalar("SELECT name FROM customers WHERE id = $1")
-            .bind(&order.customer_id)
+        let customer_name: String = sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
+            .bind(&order.login)
             .fetch_one(&*pool)
             .await
             .unwrap();
-
-        let order = Order {
-            customer_id: customer_name,
-            ..order
-        };
+        println!("customer_name is {customer_name}");
 
         let result = find_robot_in_db(&pool, &order.model, &order.version).await;
         // Проверяем, что результат не пустой
@@ -106,10 +101,10 @@ impl OrderQueue {
                         println!("product is available");
 
                         let message = format!(
-                            "Добрый день, {}!\n\
+                            "Добрый день!\n\
                             Недавно вы интересовались нашим роботом модели {}, версии {}.\n\
                             Этот робот теперь в наличии. Если вам подходит этот вариант - пожалуйста, свяжитесь с нами",
-                            &order.customer_id, &order.model, &order.version
+                            &order.model, &order.version
                         );
 
                         let (login, password) = (order.login, order.password);
