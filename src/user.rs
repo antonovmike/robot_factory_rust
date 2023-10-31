@@ -1,17 +1,9 @@
 use anyhow::Result;
 use axum::{extract::Json, http::StatusCode};
-use sqlx::postgres::PgPool;
 use validator::Validate;
 
-use crate::constants::DATABASE_URL;
+use crate::db::open_database;
 use crate::structures::Customer;
-
-async fn open_database() -> Result<PgPool, StatusCode> {
-    match PgPool::connect(DATABASE_URL).await {
-        Ok(pool) => Ok(pool),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-    }
-}
 
 pub async fn create_customer(Json(customer): Json<Customer>) -> Result<StatusCode, StatusCode> {
     let pool = open_database().await?;

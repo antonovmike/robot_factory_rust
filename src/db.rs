@@ -1,8 +1,16 @@
+use axum::http::StatusCode;
 use regex::Regex;
 use sqlx::{postgres::PgPool, Error, Executor};
 use validator::ValidationError;
 
 use crate::constants::DATABASE_URL;
+
+pub async fn open_database() -> Result<PgPool, StatusCode> {
+    match PgPool::connect(DATABASE_URL).await {
+        Ok(pool) => Ok(pool),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
 
 pub async fn setup_database() -> Result<PgPool, Error> {
     let pool = PgPool::connect(DATABASE_URL).await?;

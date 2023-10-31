@@ -4,7 +4,7 @@ use sqlx::postgres::PgPool;
 use validator::Validate;
 
 use crate::constants::DATABASE_URL;
-use crate::db::setup_database;
+use crate::db::{setup_database, open_database};
 use crate::structures::Robot;
 
 pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
@@ -22,13 +22,6 @@ fn validate_robot(robot: &Robot) -> Result<(), StatusCode> {
         Err(StatusCode::BAD_REQUEST)
     } else {
         Ok(())
-    }
-}
-
-async fn open_database() -> Result<PgPool, StatusCode> {
-    match PgPool::connect(DATABASE_URL).await {
-        Ok(pool) => Ok(pool),
-        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
