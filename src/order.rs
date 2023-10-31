@@ -34,8 +34,9 @@ pub struct OrderQueue {
 
 // Формируем запрос на поиск робота по модели и версии
 // Выполняем запрос и получаем результат
-async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i32> {
-    let sql = "SELECT * FROM robots WHERE model = $1 AND version = $2";
+async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i64> {
+    // let sql = "SELECT * FROM robots WHERE model = $1 AND version = $2";
+    let sql = "SELECT COUNT (*) FROM robots WHERE model = $1 AND version = $2";
 
     sqlx::query_scalar(sql)
         .bind(model)
@@ -65,8 +66,14 @@ impl OrderQueue {
         let pool = self.pool.lock().await;
 
         let result = find_robot_in_db(&pool, &order.model, &order.version).await;
+        println!("QUANTITY: {:?}", &result);
         // Проверяем, что результат не пустой
         match result {
+            Ok(0) => {
+                println!("product is out of stock");
+                // Добавляем заказ в вектор
+                self.orders.push_back(order);
+            }
             Ok(_) => {
                 println!("product is in stock");
             }
@@ -96,7 +103,11 @@ impl OrderQueue {
                     .unwrap();
 
                 let result = find_robot_in_db(&pool, &order.model, &order.version).await;
+                println!("QUANTITY: {:?}", &result);
                 match result {
+                    Ok(0) => {
+                        pending_orders.push_back(order);
+                    }
                     Ok(_) => {
                         println!("Hello {customer_name} product is available");
 
@@ -108,9 +119,9 @@ impl OrderQueue {
                         );
 
                         // This part of the code always returns an error
-                        // let (login, password) = (order.login, order.password);
-                        // let email_addr = check_credentials(&login, &password).await.unwrap().unwrap();
-                        // send_email(&email_addr, &message).expect("Failed to send email");
+                        let (login, password) = (order.login, order.password);
+                        let email_addr = check_credentials(&login, &password).await.unwrap().unwrap();
+                        send_email(&email_addr, &message).expect("Failed to send email");
 
                         println!("{}", message);
                     }
