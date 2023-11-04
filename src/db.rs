@@ -13,7 +13,7 @@ pub async fn open_database() -> Result<PgPool, StatusCode> {
 }
 
 pub async fn setup_database() -> Result<PgPool, Error> {
-    let pool = PgPool::connect(DATABASE_URL).await?;
+    let pool = open_database().await.unwrap();
 
     pool.execute(
         "CREATE TABLE IF NOT EXISTS robots (
@@ -47,24 +47,24 @@ pub async fn setup_database() -> Result<PgPool, Error> {
     )
     .await?;
 
-    // sqlx::query(
-    //     "CREATE TABLE IF NOT EXISTS orders (
-    //     id SERIAL PRIMARY KEY,
-    //     customer_id INTEGER NOT NULL,
-    //     robot_id INTEGER NOT NULL,
-    //     order_date TIMESTAMP NOT NULL,
-    //     CONSTRAINT fk_customer FOREIGN KEY (customer_id) REFERENCES customers (id),
-    //     CONSTRAINT fk_robot FOREIGN KEY (robot_id) REFERENCES robots (id)
-    //     )",
-    // )
-    // .execute(&pool)
-    // .await?;
+    // SOLD related to robots and customers
+    pool.execute(
+        "CREATE TABLE IF NOT EXISTS sold (
+        id SERIAL PRIMARY KEY,
+        robot_id INTEGER NOT NULL,
+        customer_id INTEGER NOT NULL,
+        sold_date TIMESTAMP NOT NULL,
+        FOREIGN KEY (robot_id) REFERENCES robots (id) ON DELETE CASCADE,
+        FOREIGN KEY (customer_id) REFERENCES customers (id)
+        )",
+    )
+    .await?;
 
     Ok(pool)
 }
 
 pub async fn get_robots_by_date(date: &str) -> Result<i64, sqlx::Error> {
-    let pool = PgPool::connect(DATABASE_URL).await?;
+    let pool = open_database().await.unwrap();
 
     let count: (i64,) = sqlx::query_as(
         r"SELECT COUNT(*) FROM robots WHERE created <= TO_TIMESTAMP($1, 'YYYY-MM-DD HH24:MI:SS')",
@@ -90,7 +90,7 @@ pub fn validate_model_version(value: &str) -> Result<(), ValidationError> {
 // Проверка логина и пароля в базе данных
 // Если найден - возвращаем email пользователя
 pub async fn check_credentials(login: &str, password: &str) -> Result<Option<String>, sqlx::Error> {
-    let pool = PgPool::connect(DATABASE_URL).await?;
+    let pool = open_database().await.unwrap();
 
     let sql = "SELECT email FROM customers WHERE login = $1 AND password = $2";
 

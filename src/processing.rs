@@ -77,6 +77,7 @@ impl OrderQueue {
             }
             Ok(_) => {
                 println!("product is in stock");
+                // Save completed order to "orders" table
                 let customer_name: String = sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
                     .bind(&order.login)
                     .fetch_one(&*pool)
