@@ -19,10 +19,14 @@ async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     let pool = sqlx::PgPool::connect(DATABASE_URL).await?;
     let robots = fetch_robots(&pool).await?;
 
-    let groups = robots.into_iter().fold(HashMap::new(), |mut acc, (model, version, count)| {
-        acc.entry(model.chars().next().unwrap()).or_insert_with(Vec::new).push((model, version, count));
-        acc
-    });
+    let groups = robots
+        .into_iter()
+        .fold(HashMap::new(), |mut acc, (model, version, count)| {
+            acc.entry(model.chars().next().unwrap())
+                .or_insert_with(Vec::new)
+                .push((model, version, count));
+            acc
+        });
     create_excel_file(groups).unwrap();
 
     Ok(())
@@ -76,30 +80,24 @@ fn write_data(
 
 pub async fn report_handler() -> std::result::Result<impl IntoResponse, (StatusCode, String)> {
     match tokio::task::spawn(create_xlsx()).await {
-        Ok(Ok(())) => (),
-        Ok(Err(err)) => {
-            return Err((
+        Ok(result) => result.map_err(|err| {
+            (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to create Excel file: {}", err),
-            ))
-        }
-        Err(err) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to run blocking task: {}", err),
-            ))
-        }
-    }
+            )
+        }),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Failed to run blocking task: {}", err),
+        )),
+    }?;
 
-    let file = match File::open(PATH_TO_XLSX).await {
-        Ok(file) => file,
-        Err(err) => {
-            return Err((
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("File not found: {}", err),
-            ))
-        }
-    };
+    let file = File::open(PATH_TO_XLSX).await.map_err(|err| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("File not found: {}", err),
+        )
+    })?;
     let stream = ReaderStream::new(file);
     let body = StreamBody::new(stream);
     let mut headers = HeaderMap::new();
