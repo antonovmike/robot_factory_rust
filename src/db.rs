@@ -38,12 +38,12 @@ pub async fn setup_database() -> Result<PgPool, Error> {
     .await?;
 
     pool.execute(
-        "CREATE TABLE IF NOT EXISTS orders (
-            id SERIAL PRIMARY KEY,
-            customer_name TEXT NOT NULL,
-            robot_model TEXT NOT NULL,
-            order_date TIMESTAMP NOT NULL,
-            )"
+    "CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        robot_model TEXT NOT NULL,
+        order_date TIMESTAMP NOT NULL,
+        )"
     )
     .await?;
 

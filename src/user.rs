@@ -5,39 +5,40 @@ use validator::Validate;
 use crate::db::open_database;
 use crate::structures::Customer;
 
+async fn insert_customer(pool: &sqlx::Pool<sqlx::Postgres>, customer: &Customer) -> Result<u64, sqlx::Error> {
+    let statement = format!(
+        "INSERT INTO customers (name, email, login, password) VALUES ($1, $2, $3, $4)"
+    );
+
+    sqlx::query(&statement)
+        .bind(&customer.name)
+        .bind(&customer.email)
+        .bind(&customer.login)
+        .bind(&customer.password)
+        .execute(pool)
+        .await
+        .map(|result| result.rows_affected())
+}
+
 pub async fn create_customer(Json(customer): Json<Customer>) -> Result<StatusCode, StatusCode> {
-    let pool = open_database().await?;
+    let pool = open_database().await.unwrap();
 
     if customer.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }
 
-    let statement = format!(
-        "INSERT INTO customers (name, email, login, password) VALUES ($1, $2, $3, $4)"
-    );
-
-    match sqlx::query(&statement)
-        .bind(&customer.name)
-        .bind(&customer.email)
-        .bind(&customer.login)
-        .bind(&customer.password)
-        .execute(&pool)
-        .await
-    {
-        Ok(result) => {
-            if result.rows_affected() > 0 {
-                println!("User has been added");
-                Ok(StatusCode::OK)
-            } else {
-                println!("Error {result:?}");
-                Err(StatusCode::NOT_FOUND)
-            }
-        }
+    match insert_customer(&pool, &customer).await {
+        Ok(rows_affected) if rows_affected > 0 => {
+            println!("User has been added");
+            Ok(StatusCode::OK)
+        },
+        Ok(_) => {
+            println!("User was not added");
+            Err(StatusCode::NOT_FOUND)
+        },
         Err(e) => {
-            eprintln!(
-                "An error occurred while inserting user into the database: {e}"
-            );
+            eprintln!("An error occurred while inserting user into the database: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+        },
     }
 }

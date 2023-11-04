@@ -78,11 +78,12 @@ impl OrderQueue {
             Ok(_) => {
                 println!("product is in stock");
                 // Save completed order to "orders" table
-                let customer_name: String = sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
-                    .bind(&order.login)
-                    .fetch_one(&*pool)
-                    .await
-                    .unwrap();
+                let customer_name: String =
+                    sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
+                        .bind(&order.login)
+                        .fetch_one(&*pool)
+                        .await
+                        .unwrap();
                 let robot_model = format!("{}-{}", &order.model, &order.version);
                 add_order(customer_name, robot_model).await.unwrap();
             }
@@ -105,11 +106,12 @@ impl OrderQueue {
             for _ in 0..self.orders.len() {
                 let order = self.orders.pop_front().unwrap();
 
-                let customer_name: String = sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
-                    .bind(&order.login)
-                    .fetch_one(&*pool)
-                    .await
-                    .unwrap();
+                let customer_name: String =
+                    sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
+                        .bind(&order.login)
+                        .fetch_one(&*pool)
+                        .await
+                        .unwrap();
 
                 let result = find_robot_in_db(&pool, &order.model, &order.version).await;
                 println!("QUANTITY: {:?}", &result);
@@ -129,7 +131,8 @@ impl OrderQueue {
 
                         // This part of the code always returns an error
                         let (login, password) = (order.login, order.password);
-                        let email_addr = check_credentials(&login, &password).await.unwrap().unwrap();
+                        let email_addr =
+                            check_credentials(&login, &password).await.unwrap().unwrap();
                         send_email(&email_addr, &message).expect("Failed to send email");
 
                         println!("{}", message);
