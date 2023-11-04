@@ -19,7 +19,10 @@ async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     let pool = sqlx::PgPool::connect(DATABASE_URL).await?;
     let robots = fetch_robots(&pool).await?;
 
-    let groups = group_robots_by_model(robots);
+    let groups = robots.into_iter().fold(HashMap::new(), |mut acc, (model, version, count)| {
+        acc.entry(model.chars().next().unwrap()).or_insert_with(Vec::new).push((model, version, count));
+        acc
+    });
     create_excel_file(groups).unwrap();
 
     Ok(())
@@ -34,20 +37,6 @@ async fn fetch_robots(pool: &sqlx::PgPool) -> sqlx::Result<Vec<(String, String, 
     .await?;
 
     Ok(robots)
-}
-
-fn group_robots_by_model(
-    robots: Vec<(String, String, i64)>,
-) -> HashMap<char, Vec<(String, String, i64)>> {
-    let mut groups: HashMap<char, Vec<(String, String, i64)>> = HashMap::new();
-    for (model, version, count) in robots {
-        let first_char = model.chars().next().unwrap();
-        groups
-            .entry(first_char)
-            .or_insert_with(Vec::new)
-            .push((model, version, count));
-    }
-    groups
 }
 
 fn create_excel_file(
