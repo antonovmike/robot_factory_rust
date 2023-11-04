@@ -4,7 +4,7 @@ use sqlx::postgres::PgPool;
 use validator::Validate;
 
 use crate::constants::DATABASE_URL;
-use crate::db::{setup_database, open_database};
+use crate::db::open_database;
 use crate::structures::Robot;
 
 pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
@@ -38,13 +38,8 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     }
     println!("Serial number: {serial_number}");
 
-    match setup_database().await {
-        Ok(_) => (),
-        Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
-    };
-
     let current_date = Utc::now().to_rfc3339();
-    let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
+    let statement = format!(r#"INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{}')"#, current_date);
     // Выполняем запрос и возвращаем статус
     match sqlx::query(&statement)
         .bind(&serial_number)
@@ -61,7 +56,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
             eprintln!(
                 "An error occurred while inserting data into the database: {e}"
             );
-            panic!("Database error");
+            panic!("Database error: {e}");
         }
     }
 }

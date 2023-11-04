@@ -22,9 +22,9 @@ mod tests {
         let client = TestClient::new(app);
 
         let robot = Robot {
-            serial: "R1".to_string(),
-            model: "M1".to_string(),
-            version: "V1".to_string(),
+            serial: "T0".to_string(),
+            model: "T0".to_string(),
+            version: "T0".to_string(),
         };
 
         let res = client.post("/robots/create").json(&robot).send().await;
