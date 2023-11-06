@@ -12,13 +12,13 @@ I probably should change the whole DB structure to something like that:
 
 ```SQL
 CREATE TABLE products (
-id INT PRIMARY KEY,
+id SERIAL PRIMARY KEY,
 model VARCHAR(10),
 quantity INT
 );
 
 INSERT INTO products (id, model, quantity) VALUES
-(1, 'M1N2', 2), (2, 'M1E4', 1), (6, 'M3E6', 4);
+('M1N2', 2), ('M1E4', 1), ('M3E6', 4);
 ```
 
 ## serial_numbers:
@@ -38,15 +38,15 @@ INSERT INTO products (id, model, quantity) VALUES
 ```SQL
 serial_numbers
 CREATE TABLE serial_numbers (
-id INT PRIMARY KEY,
+id SERIAL PRIMARY KEY,
 model_id INT REFERENCES products(id),
 serial_number VARCHAR(5) UNIQUE
 );
 
 INSERT INTO serial_numbers (id, model_id, serial_number) VALUES
-(1, 1, 'M1001'), (2, 1, 'M1002'), (3, 2, 'M1003'),
-(8, 5, 'M3001'), (9, 5, 'M3002'), (10, 5, 'M3003'),
-(11, 6, 'M3004'), (12, 6, 'M3005'), (13, 6, 'M3006');
+(1, 'M1001'), (1, 'M1002'), (2, 'M1003'),
+(5, 'M3001'), (5, 'M3002'), (5, 'M3003'),
+(6, 'M3004'), (6, 'M3005'), (6, 'M3006');
 ```
 
 ## sold:
@@ -57,7 +57,7 @@ INSERT INTO serial_numbers (id, model_id, serial_number) VALUES
 
 ```SQL
 CREATE TABLE IF NOT EXISTS sold (
-id INT PRIMARY KEY,
+id SERIAL PRIMARY KEY,
 model_id INT REFERENCES products(id),
 serial_number VARCHAR(5) UNIQUE,
 sale_date DATE,
@@ -65,6 +65,6 @@ customer_id VARCHAR(20)
 );
 
 INSERT INTO sold (id, model_id, serial_number, sale_date, customer_id) VALUES
-(1, 1, 'M1001', '2023-09-06 11:09:22', 'Kurmanjan'),
-(2, 4, 'M2003', '2023-10-13 04:24:38', 'Mary');
+(1, 'M1001', '2023-09-06 11:09:22', 'Kurmanjan'),
+(4, 'M2003', '2023-10-13 04:24:38', 'Mary');
 ```
