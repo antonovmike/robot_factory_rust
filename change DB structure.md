@@ -13,16 +13,22 @@ I probably should change the whole DB structure to something like that:
 ```SQL
 CREATE TABLE products (
 id SERIAL PRIMARY KEY,
-model VARCHAR(10),
+model VARCHAR(10) UNIQUE,
 quantity INT
 );
 
-INSERT INTO products (id, model, quantity) 
-VALUES (1, 'M1N2', 2), (2, 'M1E4', 1), (3, 'M3E6', 4);
+INSERT INTO products (model, quantity) 
+VALUES ('M1N2', 2), ('M1E4', 1), ('M3E6', 4);
 
-INSERT INTO products (id, model, quantity) 
-VALUES (1, 'M1N2', 1) 
+INSERT INTO products (model, quantity) 
+VALUES ('M1N2', 1) 
 ON CONFLICT(id) DO UPDATE SET quantity = quantity + 1;
+
+INSERT INTO products (model, quantity) 
+VALUES ('m2m2', 2) ON CONFLICT(model) 
+DO UPDATE SET quantity = products.quantity + 2;
+
+UPDATE products SET quantity = 5 WHERE model = 'm2m2';
 ```
 
 ## serial_numbers:
