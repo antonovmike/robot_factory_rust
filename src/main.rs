@@ -50,7 +50,11 @@ async fn main() {
 
 async fn amount_of_robots() {
     let db = Database::new().await.unwrap();
-    db.setup_database().await;
+
+    match db.setup_database().await {
+        Ok(_) => println!("Database setup completed successfully"),
+        Err(e) => eprintln!("Database setup failed: {}", e),
+    }
 
     let now = Local::now();
     let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
