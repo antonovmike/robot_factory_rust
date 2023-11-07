@@ -31,16 +31,18 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     let db = Database::new().await.unwrap();
     let pool = db.pool;
 
-    let serial_number;
-    if robot.serial == "0" {
-        serial_number = generate_serial_number(&robot.model).await.unwrap();
+    let serial_number = if robot.serial == "0" {
+        generate_serial_number(&robot.model).await.unwrap()
     } else {
-        serial_number = robot.serial
-    }
+        robot.serial
+    };
     println!("Serial number: {serial_number}");
 
     let current_date = Utc::now().to_rfc3339();
-    let statement = format!(r#"INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{}')"#, current_date);
+    let statement = format!(
+        r#"INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{}')"#,
+        current_date
+    );
     // Выполняем запрос и возвращаем статус
     match sqlx::query(&statement)
         .bind(&serial_number)
@@ -54,9 +56,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
             Ok(StatusCode::CREATED)
         }
         Err(e) => {
-            eprintln!(
-                "An error occurred while inserting data into the database: {e}"
-            );
+            eprintln!("An error occurred while inserting data into the database: {e}");
             panic!("Database error: {e}");
         }
     }
@@ -68,7 +68,7 @@ pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
     let db = Database::new().await.unwrap();
     let pool = db.pool;
 
-    let statement = format!("DELETE FROM robots WHERE serial = $1");
+    let statement = ("DELETE FROM robots WHERE serial = $1").to_string();
 
     match sqlx::query(&statement)
         .bind(&robot.serial)

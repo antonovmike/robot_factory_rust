@@ -5,12 +5,15 @@ use chrono::Utc;
 use crate::db::Database;
 // use crate::structures::Order;
 
-pub async fn add_order(customer_name: String, robot_model: String) -> Result<StatusCode, StatusCode> {
+pub async fn add_order(
+    customer_name: String,
+    robot_model: String,
+) -> Result<StatusCode, StatusCode> {
     let db = Database::new().await.unwrap();
     let pool = db.pool;
 
     let order_date = Utc::now().to_rfc3339();
-    
+
     let statement = format!(
         r#"INSERT INTO orders (customer_name, robot_model, order_date) VALUES (\$1, \$2, '{order_date}')"#
     );
@@ -31,9 +34,7 @@ pub async fn add_order(customer_name: String, robot_model: String) -> Result<Sta
             }
         }
         Err(e) => {
-            eprintln!(
-                "An error occurred while inserting order into the database: {e}"
-            );
+            eprintln!("An error occurred while inserting order into the database: {e}");
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         }
     }

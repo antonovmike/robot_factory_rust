@@ -16,7 +16,6 @@ pub fn validate_model_version(value: &str) -> Result<(), ValidationError> {
     Ok(())
 }
 
-
 pub struct Database {
     pub pool: PgPool,
 }
@@ -30,41 +29,45 @@ impl Database {
     }
 
     pub async fn setup_database(&self) -> Result<(), Error> {
-        self.pool.execute(
-            "CREATE TABLE IF NOT EXISTS robots (
+        self.pool
+            .execute(
+                "CREATE TABLE IF NOT EXISTS robots (
             id SERIAL PRIMARY KEY,
             serial TEXT NOT NULL,
             model TEXT NOT NULL,
             version TEXT NOT NULL,
             created TIMESTAMP NOT NULL
             )",
-        )
-        .await?;
-    
-        self.pool.execute(
-            "CREATE TABLE IF NOT EXISTS customers (
+            )
+            .await?;
+
+        self.pool
+            .execute(
+                "CREATE TABLE IF NOT EXISTS customers (
             id SERIAL PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
             login TEXT NOT NULL UNIQUE,
             password TEXT NOT NULL
             )",
-        )
-        .await?;
-    
-        self.pool.execute(
-        "CREATE TABLE IF NOT EXISTS orders (
+            )
+            .await?;
+
+        self.pool
+            .execute(
+                "CREATE TABLE IF NOT EXISTS orders (
             id SERIAL PRIMARY KEY,
             customer_name TEXT NOT NULL,
             robot_model TEXT NOT NULL,
             order_date TIMESTAMP NOT NULL,
-            )"
-        )
-        .await?;
-    
+            )",
+            )
+            .await?;
+
         // SOLD related to robots and customers
-        self.pool.execute(
-            "CREATE TABLE IF NOT EXISTS sold (
+        self.pool
+            .execute(
+                "CREATE TABLE IF NOT EXISTS sold (
             id SERIAL PRIMARY KEY,
             robot_id INTEGER NOT NULL,
             customer_id INTEGER NOT NULL,
@@ -72,9 +75,9 @@ impl Database {
             FOREIGN KEY (robot_id) REFERENCES robots (id) ON DELETE CASCADE,
             FOREIGN KEY (customer_id) REFERENCES customers (id)
             )",
-        )
-        .await?;
-    
+            )
+            .await?;
+
         Ok(())
     }
 
@@ -85,13 +88,17 @@ impl Database {
         .bind(date)
         .fetch_one(&self.pool)
         .await?;
-    
+
         Ok(count.0)
     }
 
     // Проверка логина и пароля в базе данных
     // Если найден - возвращаем email пользователя
-    pub async fn check_credentials(&self, login: &str, password: &str) -> Result<Option<String>, sqlx::Error> {
+    pub async fn check_credentials(
+        &self,
+        login: &str,
+        password: &str,
+    ) -> Result<Option<String>, sqlx::Error> {
         let sql = "SELECT email FROM customers WHERE login = $1 AND password = $2";
 
         sqlx::query_scalar(sql)

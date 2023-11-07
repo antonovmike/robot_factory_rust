@@ -12,19 +12,19 @@ use sqlx::postgres::PgPool;
 mod tests;
 
 mod constants;
-mod robot;
 mod db;
 mod order;
 mod processing;
 mod report;
+mod robot;
 mod structures;
 mod user;
 
 use constants::DATABASE_URL;
-use robot::{create_robot, remove_robot};
 use db::Database;
 use processing::order_robot;
 use report::report_handler;
+use robot::{create_robot, remove_robot};
 use user::create_customer;
 
 #[tokio::main]
