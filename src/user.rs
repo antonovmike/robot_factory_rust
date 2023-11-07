@@ -2,7 +2,7 @@ use anyhow::Result;
 use axum::{extract::Json, http::StatusCode};
 use validator::Validate;
 
-use crate::db::open_database;
+use crate::db::Database;
 use crate::structures::Customer;
 
 async fn insert_customer(pool: &sqlx::Pool<sqlx::Postgres>, customer: &Customer) -> Result<u64, sqlx::Error> {
@@ -21,7 +21,8 @@ async fn insert_customer(pool: &sqlx::Pool<sqlx::Postgres>, customer: &Customer)
 }
 
 pub async fn create_customer(Json(customer): Json<Customer>) -> Result<StatusCode, StatusCode> {
-    let pool = open_database().await.unwrap();
+    let db = Database::new().await.unwrap();
+    let pool = db.pool;
 
     if customer.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);

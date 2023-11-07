@@ -22,7 +22,7 @@ mod user;
 
 use constants::DATABASE_URL;
 use robot::{create_robot, remove_robot};
-use db::get_robots_by_date;
+use db::Database;
 use processing::order_robot;
 use report::report_handler;
 use user::create_customer;
@@ -49,9 +49,10 @@ async fn main() {
 }
 
 async fn amount_of_robots() {
+    let db = Database::new().await.unwrap();
     let now = Local::now();
     let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
-    match get_robots_by_date(&date).await {
+    match db.get_robots_by_date(&date).await {
         Ok(count) => println!("Total amount of robots on {date} is {count}"),
         Err(e) => println!("Error: {}", e),
     }

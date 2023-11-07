@@ -13,7 +13,7 @@ use validator::Validate;
 use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
-use crate::db::{check_credentials, validate_model_version};
+use crate::db::Database;
 use crate::order::add_order;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
