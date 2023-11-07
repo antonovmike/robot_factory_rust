@@ -4,7 +4,7 @@ use sqlx::postgres::PgPool;
 use validator::Validate;
 
 use crate::constants::DATABASE_URL;
-use crate::db::open_database;
+use crate::db::Database;
 use crate::structures::Robot;
 
 pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
@@ -28,7 +28,8 @@ fn validate_robot(robot: &Robot) -> Result<(), StatusCode> {
 pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     validate_robot(&robot)?;
 
-    let pool = open_database().await?;
+    let db = Database::new().await.unwrap();
+    let pool = db.pool;
 
     let serial_number;
     if robot.serial == "0" {
@@ -64,7 +65,8 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
 pub async fn remove_robot(Json(robot): Json<Robot>) -> Result<StatusCode, StatusCode> {
     validate_robot(&robot)?;
 
-    let pool = open_database().await?;
+    let db = Database::new().await.unwrap();
+    let pool = db.pool;
 
     let statement = format!("DELETE FROM robots WHERE serial = $1");
 

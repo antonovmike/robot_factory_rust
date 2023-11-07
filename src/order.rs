@@ -2,11 +2,12 @@ use anyhow::Result;
 use axum::http::StatusCode;
 use chrono::Utc;
 
-use crate::db::open_database;
+use crate::db::Database;
 // use crate::structures::Order;
 
 pub async fn add_order(customer_name: String, robot_model: String) -> Result<StatusCode, StatusCode> {
-    let pool = open_database().await.expect("Failed to open database");
+    let db = Database::new().await.unwrap();
+    let pool = db.pool;
 
     let order_date = Utc::now().to_rfc3339();
     

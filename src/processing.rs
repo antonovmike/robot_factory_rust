@@ -13,7 +13,7 @@ use validator::Validate;
 use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
-use crate::db::Database;
+use crate::db::{Database, validate_model_version};
 use crate::order::add_order;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
@@ -121,6 +121,7 @@ impl OrderQueue {
                     }
                     Ok(_) => {
                         println!("Hello {customer_name} product is available");
+                        let db = Database::new().await.unwrap();
 
                         let message = format!(
                             "Добрый день, {}!\n\
@@ -132,7 +133,7 @@ impl OrderQueue {
                         // This part of the code always returns an error
                         let (login, password) = (order.login, order.password);
                         let email_addr =
-                            check_credentials(&login, &password).await.unwrap().unwrap();
+                            db.check_credentials(&login, &password).await.unwrap().unwrap();
                         send_email(&email_addr, &message).expect("Failed to send email");
 
                         println!("{}", message);
