@@ -50,6 +50,8 @@ async fn main() {
 
 async fn amount_of_robots() {
     let db = Database::new().await.unwrap();
+    db.setup_database().await;
+
     let now = Local::now();
     let date = now.format("%Y-%m-%d %H:%M:%S").to_string();
     match db.get_robots_by_date(&date).await {

@@ -1,8 +1,9 @@
 use anyhow::Result;
+use axum::Extension;
 use axum::{extract::Json, http::StatusCode};
+use sqlx::PgPool;
 use validator::Validate;
 
-use crate::db::Database;
 use crate::structures::Customer;
 
 async fn insert_customer(pool: &sqlx::Pool<sqlx::Postgres>, customer: &Customer) -> Result<u64, sqlx::Error> {
@@ -19,11 +20,12 @@ async fn insert_customer(pool: &sqlx::Pool<sqlx::Postgres>, customer: &Customer)
         .await
         .map(|result| result.rows_affected())
 }
-
-pub async fn create_customer(Json(customer): Json<Customer>) -> Result<StatusCode, StatusCode> {
-    let db = Database::new().await.unwrap();
-    let pool = db.pool;
-
+// in Axum 0.6.0 and later, the extractor that consumes the request body
+// must be last in the list of route handler arguments.
+// This means that Json<Customer> must be the last argument in the route handler
+pub async fn create_customer(
+    (Extension(pool), Json(customer)): (Extension<PgPool>, Json<Customer>)
+) -> Result<StatusCode, StatusCode> {
     if customer.validate().is_err() {
         return Err(StatusCode::BAD_REQUEST);
     }

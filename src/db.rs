@@ -30,8 +30,6 @@ impl Database {
     }
 
     pub async fn setup_database(&self) -> Result<(), Error> {
-        let pool = Self::new().await.unwrap();
-
         self.pool.execute(
             "CREATE TABLE IF NOT EXISTS robots (
             id SERIAL PRIMARY KEY,
@@ -81,8 +79,6 @@ impl Database {
     }
 
     pub async fn get_robots_by_date(&self, date: &str) -> Result<i64, sqlx::Error> {
-        let pool = Self::new().await.unwrap();
-
         let count: (i64,) = sqlx::query_as(
             r"SELECT COUNT(*) FROM robots WHERE created <= TO_TIMESTAMP($1, 'YYYY-MM-DD HH24:MI:SS')",
         )
@@ -96,8 +92,6 @@ impl Database {
     // Проверка логина и пароля в базе данных
     // Если найден - возвращаем email пользователя
     pub async fn check_credentials(&self, login: &str, password: &str) -> Result<Option<String>, sqlx::Error> {
-        let pool = Self::new().await.unwrap();
-
         let sql = "SELECT email FROM customers WHERE login = $1 AND password = $2";
 
         sqlx::query_scalar(sql)
