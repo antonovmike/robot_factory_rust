@@ -52,10 +52,15 @@ model_id INT REFERENCES products(id),
 serial_number VARCHAR(5) UNIQUE
 );
 
-INSERT INTO serial_numbers (id, model_id, serial_number) VALUES
+INSERT INTO serial_numbers (model_id, serial_number) VALUES
 (1, 'M1001'), (1, 'M1002'), (2, 'M1003'),
 (5, 'M1004'), (5, 'M3001'), (5, 'M3002'),
 (6, 'M3003'), (6, 'M3004');
+```
+Print all models and their serial numbers
+```SQL
+SELECT model, serial_num FROM products 
+INNER JOIN serial_numbers ON products.id = serial_numbers.model_id;
 ```
 
 ## sold:
