@@ -106,4 +106,14 @@ impl Database {
             .fetch_optional(&self.pool)
             .await
     }
+
+    pub async fn find_robot(&self, model: &str, version: &str) -> sqlx::Result<i64> {
+        let sql = "SELECT COUNT (*) FROM robots WHERE model = $1 AND version = $2";
+    
+        sqlx::query_scalar(sql)
+            .bind(model)
+            .bind(version)
+            .fetch_one(&self.pool)
+            .await
+    }
 }

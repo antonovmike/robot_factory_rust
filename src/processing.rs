@@ -34,15 +34,15 @@ pub struct OrderQueue {
 }
 
 // Form a query to search for a robot by model and version, execute the query and get the result
-async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i64> {
-    let sql = "SELECT COUNT (*) FROM robots WHERE model = $1 AND version = $2";
+// async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i64> {
+//     let sql = "SELECT COUNT (*) FROM robots WHERE model = $1 AND version = $2";
 
-    sqlx::query_scalar(sql)
-        .bind(model)
-        .bind(version)
-        .fetch_one(pool)
-        .await
-}
+//     sqlx::query_scalar(sql)
+//         .bind(model)
+//         .bind(version)
+//         .fetch_one(pool)
+//         .await
+// }
 
 impl OrderQueue {
     pub async fn new() -> Self {
@@ -62,9 +62,10 @@ impl OrderQueue {
     pub async fn enqueue(&mut self, order: CurrentOrder) {
         println!("enqueue: {order:?}");
 
+        let db = Database::new().await.unwrap();
         let pool = self.pool.lock().await;
 
-        let result = find_robot_in_db(&pool, &order.model, &order.version).await;
+        let result = Database::find_robot(&db, &order.model, &order.version).await;
         println!("QUANTITY: {:?}", &result);
         // Check that the result is not empty
         match result {
@@ -97,6 +98,8 @@ impl OrderQueue {
     pub async fn process(&mut self) {
         loop {
             let pool = self.pool.lock().await;
+            let db = Database::new().await.unwrap();
+
             // Vector for storing uncompleted orders
             let mut pending_orders = VecDeque::new();
 
@@ -111,7 +114,7 @@ impl OrderQueue {
                         .await
                         .unwrap();
 
-                let result = find_robot_in_db(&pool, &order.model, &order.version).await;
+                let result = Database::find_robot(&db, &order.model, &order.version).await;
                 println!("QUANTITY: {:?}", &result);
                 match result {
                     Ok(0) => {
