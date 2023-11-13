@@ -59,12 +59,12 @@ impl Database {
             id SERIAL PRIMARY KEY,
             customer_name TEXT NOT NULL,
             robot_model TEXT NOT NULL,
-            order_date TIMESTAMP NOT NULL,
+            order_date TIMESTAMP NOT NULL
             )",
             )
             .await?;
 
-        // SOLD related to robots and customers
+        // // SOLD related to robots and customers
         self.pool
             .execute(
                 "CREATE TABLE IF NOT EXISTS sold (
@@ -109,7 +109,7 @@ impl Database {
 
     pub async fn find_robot(&self, model: &str, version: &str) -> sqlx::Result<i64> {
         let sql = "SELECT COUNT (*) FROM robots WHERE model = $1 AND version = $2";
-    
+
         sqlx::query_scalar(sql)
             .bind(model)
             .bind(version)
