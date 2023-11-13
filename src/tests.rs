@@ -18,7 +18,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_robot_valid() {
-        let app = Router::new().route("/robots/create", post(create_robot));
+        let app = Router::new().route("/create", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.create_robot().await
+        }));
         let client = TestClient::new(app);
 
         let robot = Robot {
@@ -27,13 +34,20 @@ mod tests {
             version: "T0".to_string(),
         };
 
-        let res = client.post("/robots/create").json(&robot).send().await;
+        let res = client.post("/create").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::CREATED);
     }
 
     #[tokio::test]
     async fn test_create_robot_invalid_serial() {
-        let app = Router::new().route("/robots/create", post(create_robot));
+        let app = Router::new().route("/create", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.create_robot().await
+        }));
         let client = TestClient::new(app);
 
         let robot = Robot {
@@ -42,13 +56,20 @@ mod tests {
             version: "V1".to_string(),
         };
 
-        let res = client.post("/robots/create").json(&robot).send().await;
+        let res = client.post("/create").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]
     async fn test_create_robot_invalid_model() {
-        let app = Router::new().route("/robots/create", post(create_robot));
+        let app = Router::new().route("/create", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.create_robot().await
+        }));
         let client = TestClient::new(app);
 
         let robot = Robot {
@@ -57,7 +78,7 @@ mod tests {
             version: "V1".to_string(),
         };
 
-        let res = client.post("/robots/create").json(&robot).send().await;
+        let res = client.post("/create").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::BAD_REQUEST);
     }
 
@@ -86,8 +107,22 @@ mod tests {
     #[tokio::test]
     async fn test_remove_robot_valid() {
         let app = Router::new()
-            .route("/robots/create", post(create_robot))
-            .route("/robots/remove", post(remove_robot));
+        .route("/create", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.create_robot().await
+        }))
+        .route("/remove", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.remove_robot().await
+        }));
         let client = TestClient::new(app);
 
         // Creating a robot with valid values
@@ -109,13 +144,20 @@ mod tests {
             .await
             .unwrap();
 
-        let res = client.post("/robots/remove").json(&robot).send().await;
+        let res = client.post("/remove").json(&robot).send().await;
         assert_eq!(res.status(), StatusCode::OK);
     }
 
     #[tokio::test]
     async fn test_remove_robot_not_found() {
-        let app = Router::new().route("/robots/remove", post(remove_robot));
+        let app = Router::new().route("/remove", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.remove_robot().await
+        }));
         let client = TestClient::new(app);
 
         // Trying to delete a robot that is not in the database

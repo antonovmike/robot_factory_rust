@@ -2,6 +2,7 @@ use std::net::SocketAddr;
 
 use axum::extract::Extension;
 use axum::{
+    Json,
     routing::{get, post},
     Router, Server,
 };
@@ -24,7 +25,7 @@ use constants::DATABASE_URL;
 use db::Database;
 use processing::order_robot;
 use report::report_handler;
-use robot::{create_robot, remove_robot};
+use robot::Robot;
 use user::create_customer;
 
 #[tokio::main]
@@ -34,9 +35,23 @@ async fn main() {
     let pool = PgPool::connect(DATABASE_URL).await.unwrap();
     let app = Router::new()
         .route("/robots/report", get(report_handler))
-        .route("/robots/create", post(create_robot))
+        .route("/create", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.create_robot().await
+        }))
+        .route("/remove", post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.remove_robot().await
+        }))
         .route("/robots/order", post(order_robot))
-        .route("/robots/remove", post(remove_robot))
         .route("/user/create", post(create_customer))
         .layer(Extension(pool));
 
