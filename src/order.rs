@@ -14,7 +14,7 @@ pub async fn add_order(
     let order_date = Utc::now().to_rfc3339();
 
     let statement = format!(
-        r#"INSERT INTO orders (customer_name, robot_model, order_date) VALUES (\$1, \$2, '{order_date}')"#
+        r#"INSERT INTO orders (customer_name, robot_model, order_date) VALUES ($1, $2, '{order_date}')"#
     );
 
     match sqlx::query(&statement)
