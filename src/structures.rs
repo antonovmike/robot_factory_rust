@@ -16,11 +16,6 @@ pub struct Customer {
     pub password: String,
 }
 
-// pub struct Order {
-//     customer: Customer,
-//     robot_serial: String,
-// }
-
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Robot {
     #[validate(length(min = 1, max = 5))]

@@ -20,7 +20,7 @@ use crate::order::add_order;
 pub struct CurrentOrder {
     pub login: String,
     pub password: String,
-    // Проверяем, что модель и версия соответствуют шаблону [A-Za-z][0-9]
+    // Check that the model and version match the template [A-Za-z][0-9]
     #[validate(custom = "validate_model_version")]
     pub model: String,
     #[validate(custom = "validate_model_version")]
@@ -29,14 +29,12 @@ pub struct CurrentOrder {
 
 pub struct OrderQueue {
     pub orders: std::collections::VecDeque<CurrentOrder>,
-    // Ссылка на соединение с базой данных
+    // Database connection link
     pool: Arc<Mutex<PgPool>>,
 }
 
-// Формируем запрос на поиск робота по модели и версии
-// Выполняем запрос и получаем результат
+// Form a query to search for a robot by model and version, execute the query and get the result
 async fn find_robot_in_db(pool: &PgPool, model: &str, version: &str) -> sqlx::Result<i64> {
-    // let sql = "SELECT * FROM robots WHERE model = $1 AND version = $2";
     let sql = "SELECT COUNT (*) FROM robots WHERE model = $1 AND version = $2";
 
     sqlx::query_scalar(sql)
@@ -52,7 +50,7 @@ impl OrderQueue {
             Ok(pool) => pool,
             Err(err) => panic!("Failed to open database connection: {}", err),
         };
-        // Оборачиваем соединение в Arc и Mutex для безопасного доступа из разных потоков
+        // Wrap the connection in Arc and Mutex for secure access from different threads
         let pool = Arc::new(Mutex::new(pool));
 
         let orders = VecDeque::new();
@@ -60,19 +58,19 @@ impl OrderQueue {
         Self { orders, pool }
     }
 
-    // Метод для добавления заказа в очередь
+    // Method for adding an order to the queue
     pub async fn enqueue(&mut self, order: CurrentOrder) {
         println!("enqueue: {order:?}");
-        // Получаем доступ к соединению с базой данных
+
         let pool = self.pool.lock().await;
 
         let result = find_robot_in_db(&pool, &order.model, &order.version).await;
         println!("QUANTITY: {:?}", &result);
-        // Проверяем, что результат не пустой
+        // Check that the result is not empty
         match result {
             Ok(0) => {
                 println!("product is out of stock");
-                // Добавляем заказ в вектор
+
                 self.orders.push_back(order);
             }
             Ok(_) => {
@@ -89,20 +87,20 @@ impl OrderQueue {
             }
             Err(_) => {
                 println!("product is out of stock");
-                // Добавляем заказ в вектор
+
                 self.orders.push_back(order);
             }
         }
     }
 
-    // Метод для обработки очереди
+    // Method for queue processing
     pub async fn process(&mut self) {
         loop {
             let pool = self.pool.lock().await;
-            // Вектор для хранения не выполненных заказов
+            // Vector for storing uncompleted orders
             let mut pending_orders = VecDeque::new();
 
-            // Итерируем по вектору заказов с помощью метода drain, который перемещает элементы из вектора
+            // Iterate over the order vector using the drain method, which moves elements from the vector
             for _ in 0..self.orders.len() {
                 let order = self.orders.pop_front().unwrap();
 
@@ -146,9 +144,9 @@ impl OrderQueue {
                     }
                 }
             }
-            // Заменяем вектор заказов на вектор невыполненных заказов
+            // Replace the vector of orders with the vector of uncompleted orders
             self.orders = pending_orders;
-            // Освобождаем доступ к соединению с базой данных
+            // Release access to the database connection
             drop(pool);
 
             sleep(Duration::from_secs(CHECK_INTERVAL)).await;
@@ -164,21 +162,21 @@ pub async fn order_robot(
     }
 
     let queue = Arc::new(Mutex::new(OrderQueue::new().await));
-    // Получаем блокировку на очередь и добавляем заказ
+    // Get a lock on the queue and add the order
     queue.lock().await.enqueue(order).await;
     // Запускаем задачу для обработки очереди
     let queue_clone = Arc::clone(&queue);
     tokio::spawn(async move {
-        // Получаем блокировку на очередь и вызываем метод process
+        // Get a lock on the queue and call the process method
         queue_clone.lock().await.process().await;
     });
 
-    // Проверяем, есть ли заказы в очереди
+    // Checking to see if there are any orders in the queue
     if queue.lock().await.orders.is_empty() {
-        // Если очередь пуста, возвращаем статус код 200 (OK)
+        // If queue is empty, return status code 200 (OK)
         Ok(axum::http::StatusCode::OK)
     } else {
-        // Если в очереди есть заказы, возвращаем статус код 404 (Not Found)
+        // If there are orders in the queue, return status code 404 (Not Found)
         Err(axum::http::StatusCode::NOT_FOUND)
     }
 }

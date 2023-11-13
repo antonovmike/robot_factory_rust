@@ -43,7 +43,7 @@ pub async fn create_robot(Json(robot): Json<Robot>) -> Result<StatusCode, Status
         r#"INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{}')"#,
         current_date
     );
-    // Выполняем запрос и возвращаем статус
+    // Execute the request and return the status
     match sqlx::query(&statement)
         .bind(&serial_number)
         .bind(&robot.model)

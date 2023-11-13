@@ -3,7 +3,6 @@ use axum::http::StatusCode;
 use chrono::Utc;
 
 use crate::db::Database;
-// use crate::structures::Order;
 
 pub async fn add_order(
     customer_name: String,

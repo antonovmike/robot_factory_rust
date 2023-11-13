@@ -63,22 +63,22 @@ mod tests {
 
     #[tokio::test]
     async fn test_report_handler_success() {
-        // Маршрутизатор с обработчиком report_handler и тестовый клиент
+        // Router with report_handler and test client
         let app = Router::new().route("/robots/report", get(report_handler));
         let client = TestClient::new(app);
-        // Отправляем GET-запрос к обработчику report_handler
+        // Send a GET request to the report_handler
         let res = client.get("/robots/report").send().await;
-        // Проверяем статус ответа - должен быть 200 OK
+        // Check the status of the response - it should be 200 OK
         assert_eq!(res.status(), StatusCode::OK);
-        // Тип ответа должен быть application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+        // The response type should be application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
         assert_eq!(
             res.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap(),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         );
 
-        // Тело ответа должно содержать байты Excel-файла
-        // Используем метод bytes() вместо body() для чтения тела ответа как вектора байтов
-        // Excel-файлы начинаются с байтов PK\x03\x04
+        // The body of the response must contain the bytes of the Excel file
+        // Use the bytes() method instead of body() to read the response body as a vector of bytes
+        // Excel files start with bytes PK\x03\x04
         let body = res.bytes().await;
         assert!(body.starts_with(b"PK\x03\x04"));
     }
@@ -90,14 +90,14 @@ mod tests {
             .route("/robots/remove", post(remove_robot));
         let client = TestClient::new(app);
 
-        // Создаем робота с допустимыми значениями
+        // Creating a robot with valid values
         let robot = Robot {
             serial: "M10M1".to_string(),
             model: "M1".to_string(),
             version: "V1".to_string(),
         };
 
-        // Добавляем робота в базу данных
+        // Add robot to Database
         let pool = PgPool::connect(DATABASE_URL).await.unwrap();
         let current_date = Utc::now().to_rfc3339();
         let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
@@ -118,7 +118,7 @@ mod tests {
         let app = Router::new().route("/robots/remove", post(remove_robot));
         let client = TestClient::new(app);
 
-        // Пытаемся удалить робота, которого нет в базе данных
+        // Trying to delete a robot that is not in the database
         let non_existent_robot = Robot {
             serial: "R99".to_string(),
             model: "M1".to_string(),

@@ -92,8 +92,7 @@ impl Database {
         Ok(count.0)
     }
 
-    // Проверка логина и пароля в базе данных
-    // Если найден - возвращаем email пользователя
+    // Check login and password in the database if found - return user email
     pub async fn check_credentials(
         &self,
         login: &str,
