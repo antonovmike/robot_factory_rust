@@ -14,7 +14,7 @@ use validator_derive::Validate;
 
 use crate::constants::{CHECK_INTERVAL, DATABASE_URL, SMTP_SENDER, SMTP_SERVER};
 use crate::db::{validate_model_version, Database};
-use crate::order::add_order;
+use crate::order::Order;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct CurrentOrder {
@@ -47,37 +47,41 @@ impl OrderQueue {
     }
 
     // Method for adding an order to the queue
-    pub async fn enqueue(&mut self, order: CurrentOrder) {
-        println!("enqueue: {order:?}");
+    pub async fn enqueue(&mut self, order_current: CurrentOrder) {
+        println!("enqueue: {:?}", order_current);
 
         let db = Database::new().await.unwrap();
         let pool = self.pool.lock().await;
+        let order = Order {
+            customer_name: order_current.login.clone(),
+            robot_model: order_current.model.clone(),
+        };
 
-        let result = Database::find_robot(&db, &order.model, &order.version).await;
+        let result = Database::find_robot(&db, &order_current.model, &order_current.version).await;
         println!("QUANTITY: {:?}", &result);
         // Check that the result is not empty
         match result {
             Ok(0) => {
                 println!("product is out of stock");
 
-                self.orders.push_back(order);
+                self.orders.push_back(order_current);
             }
             Ok(_) => {
                 println!("product is in stock");
                 // Save completed order to "orders" table
                 let customer_name: String =
                     sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
-                        .bind(&order.login)
+                        .bind(&order_current.login)
                         .fetch_one(&*pool)
                         .await
                         .unwrap();
-                let robot_model = format!("{}-{}", &order.model, &order.version);
-                add_order(customer_name, robot_model).await.unwrap();
+                let robot_model = format!("{}-{}", &order_current.model, &order_current.version);
+                order.add_order(customer_name, robot_model).await.unwrap();
             }
             Err(_) => {
                 println!("product is out of stock");
 
-                self.orders.push_back(order);
+                self.orders.push_back(order_current);
             }
         }
     }
