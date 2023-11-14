@@ -79,6 +79,7 @@ fn write_data(
 }
 
 pub async fn report_handler() -> std::result::Result<impl IntoResponse, (StatusCode, String)> {
+    println!("report_handler"); // works
     match tokio::task::spawn(create_xlsx()).await {
         Ok(result) => result.map_err(|err| {
             (

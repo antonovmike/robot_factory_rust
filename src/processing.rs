@@ -48,7 +48,7 @@ impl OrderQueue {
 
     // Method for adding an order to the queue
     pub async fn enqueue(&mut self, order_current: CurrentOrder) {
-        println!("enqueue: {:?}", order_current);
+        println!("Enqueue: {:?}", order_current);
 
         let db = Database::new().await.unwrap();
         let pool = self.pool.lock().await;
@@ -58,16 +58,15 @@ impl OrderQueue {
         };
 
         let result = Database::find_robot(&db, &order_current.model, &order_current.version).await;
-        println!("QUANTITY: {:?}", &result);
         // Check that the result is not empty
         match result {
             Ok(0) => {
-                println!("product is out of stock");
+                println!("Product is out of stock");
 
                 self.orders.push_back(order_current);
             }
             Ok(_) => {
-                println!("product is in stock");
+                println!("Product is in stock");
                 // Save completed order to "orders" table
                 let customer_name: String =
                     sqlx::query_scalar("SELECT name FROM customers WHERE login = $1")
@@ -107,7 +106,6 @@ impl OrderQueue {
                         .unwrap();
 
                 let result = Database::find_robot(&db, &order.model, &order.version).await;
-                println!("QUANTITY: {:?}", &result);
                 match result {
                     Ok(0) => {
                         pending_orders.push_back(order);

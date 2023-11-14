@@ -35,7 +35,7 @@ async fn main() {
     let pool = PgPool::connect(DATABASE_URL).await.unwrap();
     let app = Router::new()
         .route("/robots/report", get(report_handler))
-        .route("/create", post(move |Json(robot_data): Json<Robot>| async move {
+        .route("/robots/create", post(move |Json(robot_data): Json<Robot>| async move {
             let robot = Robot {
                 serial: robot_data.serial,
                 model: robot_data.model,
@@ -43,7 +43,7 @@ async fn main() {
             };
             robot.create_robot().await
         }))
-        .route("/remove", post(move |Json(robot_data): Json<Robot>| async move {
+        .route("/robots/remove", post(move |Json(robot_data): Json<Robot>| async move {
             let robot = Robot {
                 serial: robot_data.serial,
                 model: robot_data.model,
