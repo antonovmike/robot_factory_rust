@@ -1,9 +1,9 @@
 use anyhow::Result;
 use axum::Extension;
 use axum::{extract::Json, http::StatusCode};
+use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use validator::Validate;
-use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]

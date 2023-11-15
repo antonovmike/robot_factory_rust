@@ -1,13 +1,13 @@
 use axum::http::StatusCode;
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgPool;
 use validator::Validate;
-use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
 
 use crate::constants::DATABASE_URL;
-use crate::db::Database;
 use crate::db::validate_model_version;
+use crate::db::Database;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Robot {

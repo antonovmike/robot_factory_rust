@@ -23,8 +23,7 @@ impl Order {
         let statement = format!(
             r#"INSERT INTO orders (customer_name, robot_model, order_date) VALUES (\$1, \$2, '{}')"#,
             order_date
-         );
-         
+        );
 
         match sqlx::query(&statement)
             .bind(&customer_name)
@@ -48,7 +47,6 @@ impl Order {
         }
     }
 }
-
 
 // pub async fn add_order(
 //     customer_name: String,
