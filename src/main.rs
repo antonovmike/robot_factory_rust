@@ -18,7 +18,6 @@ mod order;
 mod processing;
 mod report;
 mod robot;
-mod structures;
 mod user;
 
 use constants::DATABASE_URL;
@@ -30,7 +29,7 @@ use user::create_customer;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    amount_of_robots().await;
+    amount_of_robots().await?;
 
     let pool = PgPool::connect(DATABASE_URL).await?;
     let app = Router::new()

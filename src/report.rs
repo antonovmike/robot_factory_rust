@@ -59,7 +59,7 @@ fn create_excel_file(
     Ok(())
 }
 
-fn write_headers(sheet: &mut Worksheet) -> std::result::Result<(), XlsxError> {
+fn write_headers(sheet: &mut Worksheet) -> Result<(), XlsxError> {
     for (i, header) in SHEET_HEADERS.iter().enumerate() {
         sheet.write_string(0, i as u16, header.to_string())?;
     }
