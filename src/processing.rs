@@ -159,10 +159,9 @@ pub async fn order_robot(
     queue.lock().await.enqueue(order).await;
     // Запускаем задачу для обработки очереди
     let queue_clone = Arc::clone(&queue);
-    tokio::spawn(async move {
-        // Get a lock on the queue and call the process method
-        queue_clone.lock().await.process().await;
-    });
+
+    // Get a lock on the queue and call the process method
+    queue_clone.lock().await.process().await;
 
     // Checking to see if there are any orders in the queue
     if queue.lock().await.orders.is_empty() {

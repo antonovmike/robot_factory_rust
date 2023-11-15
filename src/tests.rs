@@ -1,11 +1,7 @@
 use super::*;
 use crate::robot::Robot;
 
-use axum::{
-    http,
-    routing::{get, post},
-    Router,
-};
+use axum::http;
 use http::header::CONTENT_TYPE;
 
 use axum::http::StatusCode;
@@ -15,17 +11,8 @@ use sqlx::postgres::PgPool;
 
 #[tokio::test]
 async fn test_create_robot_valid() {
-    let app = Router::new().route(
-        "/create",
-        post(move |Json(robot_data): Json<Robot>| async move {
-            let robot = Robot {
-                serial: robot_data.serial,
-                model: robot_data.model,
-                version: robot_data.version,
-            };
-            robot.create_robot().await
-        }),
-    );
+    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let app = create_router(pool);
     let client = TestClient::new(app);
 
     let robot = Robot {
@@ -34,23 +21,14 @@ async fn test_create_robot_valid() {
         version: "T0".to_string(),
     };
 
-    let res = client.post("/create").json(&robot).send().await;
+    let res = client.post("/robots/create").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::CREATED);
 }
 
 #[tokio::test]
 async fn test_create_robot_invalid_serial() {
-    let app = Router::new().route(
-        "/create",
-        post(move |Json(robot_data): Json<Robot>| async move {
-            let robot = Robot {
-                serial: robot_data.serial,
-                model: robot_data.model,
-                version: robot_data.version,
-            };
-            robot.create_robot().await
-        }),
-    );
+    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let app = create_router(pool);
     let client = TestClient::new(app);
 
     let robot = Robot {
@@ -59,23 +37,14 @@ async fn test_create_robot_invalid_serial() {
         version: "V1".to_string(),
     };
 
-    let res = client.post("/create").json(&robot).send().await;
+    let res = client.post("/robots/create").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
 async fn test_create_robot_invalid_model() {
-    let app = Router::new().route(
-        "/create",
-        post(move |Json(robot_data): Json<Robot>| async move {
-            let robot = Robot {
-                serial: robot_data.serial,
-                model: robot_data.model,
-                version: robot_data.version,
-            };
-            robot.create_robot().await
-        }),
-    );
+    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let app = create_router(pool);
     let client = TestClient::new(app);
 
     let robot = Robot {
@@ -84,14 +53,14 @@ async fn test_create_robot_invalid_model() {
         version: "V1".to_string(),
     };
 
-    let res = client.post("/create").json(&robot).send().await;
+    let res = client.post("/robots/create").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
 async fn test_report_handler_success() {
-    // Router with report_handler and test client
-    let app = Router::new().route("/robots/report", get(report_handler));
+    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let app = create_router(pool);
     let client = TestClient::new(app);
     // Send a GET request to the report_handler
     let res = client.get("/robots/report").send().await;
@@ -112,29 +81,8 @@ async fn test_report_handler_success() {
 
 #[tokio::test]
 async fn test_remove_robot_valid() {
-    let app = Router::new()
-        .route(
-            "/create",
-            post(move |Json(robot_data): Json<Robot>| async move {
-                let robot = Robot {
-                    serial: robot_data.serial,
-                    model: robot_data.model,
-                    version: robot_data.version,
-                };
-                robot.create_robot().await
-            }),
-        )
-        .route(
-            "/remove",
-            post(move |Json(robot_data): Json<Robot>| async move {
-                let robot = Robot {
-                    serial: robot_data.serial,
-                    model: robot_data.model,
-                    version: robot_data.version,
-                };
-                robot.remove_robot().await
-            }),
-        );
+    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let app = create_router(pool);
     let client = TestClient::new(app);
 
     // Creating a robot with valid values
@@ -156,23 +104,14 @@ async fn test_remove_robot_valid() {
         .await
         .unwrap();
 
-    let res = client.post("/remove").json(&robot).send().await;
+    let res = client.post("/robots/remove").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::OK);
 }
 
 #[tokio::test]
 async fn test_remove_robot_not_found() {
-    let app = Router::new().route(
-        "/remove",
-        post(move |Json(robot_data): Json<Robot>| async move {
-            let robot = Robot {
-                serial: robot_data.serial,
-                model: robot_data.model,
-                version: robot_data.version,
-            };
-            robot.remove_robot().await
-        }),
-    );
+    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let app = create_router(pool);
     let client = TestClient::new(app);
 
     // Trying to delete a robot that is not in the database

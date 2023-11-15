@@ -31,39 +31,45 @@ async fn main() -> anyhow::Result<()> {
     amount_of_robots().await?;
 
     let pool = PgPool::connect(DATABASE_URL).await?;
-    let app = Router::new()
-        .route("/robots/report", get(report_handler))
-        .route(
-            "/robots/create",
-            post(move |Json(robot_data): Json<Robot>| async move {
-                let robot = Robot {
-                    serial: robot_data.serial,
-                    model: robot_data.model,
-                    version: robot_data.version,
-                };
-                robot.create_robot().await
-            }),
-        )
-        .route(
-            "/robots/remove",
-            post(move |Json(robot_data): Json<Robot>| async move {
-                let robot = Robot {
-                    serial: robot_data.serial,
-                    model: robot_data.model,
-                    version: robot_data.version,
-                };
-                robot.remove_robot().await
-            }),
-        )
-        .route("/robots/order", post(order_robot))
-        .route("/user/create", post(create_customer))
-        .layer(Extension(pool));
+    let app = create_router(pool);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
 
     Server::bind(&addr).serve(app.into_make_service()).await?;
 
     Ok(())
+}
+
+pub fn create_router(pool: PgPool) -> Router<()> {
+    let router: Router = Router::new()
+    .route("/robots/report", get(report_handler))
+    .route(
+        "/robots/create",
+        post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.create_robot().await
+        }),
+    )
+    .route(
+        "/robots/remove",
+        post(move |Json(robot_data): Json<Robot>| async move {
+            let robot = Robot {
+                serial: robot_data.serial,
+                model: robot_data.model,
+                version: robot_data.version,
+            };
+            robot.remove_robot().await
+        }),
+    )
+    .route("/robots/order", post(order_robot))
+    .route("/user/create", post(create_customer))
+    .layer(Extension(pool));
+
+    router
 }
 
 async fn amount_of_robots() -> anyhow::Result<()> {
