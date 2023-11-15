@@ -64,7 +64,7 @@ impl Database {
             )
             .await?;
 
-        // // SOLD related to robots and customers
+        // SOLD related to robots and customers
         self.pool
             .execute(
                 "CREATE TABLE IF NOT EXISTS sold (

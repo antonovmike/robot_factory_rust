@@ -29,10 +29,10 @@ use robot::Robot;
 use user::create_customer;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     amount_of_robots().await;
 
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = Router::new()
         .route("/robots/report", get(report_handler))
         .route("/robots/create", post(move |Json(robot_data): Json<Robot>| async move {
@@ -59,11 +59,12 @@ async fn main() {
 
     Server::bind(&addr)
         .serve(app.into_make_service())
-        .await
-        .unwrap();
+        .await?;
+
+    Ok(())
 }
 
-async fn amount_of_robots() {
+async fn amount_of_robots() -> anyhow::Result<()> {
     let db = Database::new().await.unwrap();
 
     match db.setup_database().await {
@@ -77,4 +78,6 @@ async fn amount_of_robots() {
         Ok(count) => println!("Total amount of robots on {date} is {count}"),
         Err(e) => println!("Error: {}", e),
     }
+
+    Ok(())
 }

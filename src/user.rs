@@ -3,8 +3,20 @@ use axum::Extension;
 use axum::{extract::Json, http::StatusCode};
 use sqlx::PgPool;
 use validator::Validate;
+use serde::{Deserialize, Serialize};
+use validator_derive::Validate;
 
-use crate::structures::Customer;
+#[derive(Debug, Deserialize, Serialize, Validate)]
+pub struct Customer {
+    #[validate(length(min = 1))]
+    pub name: String,
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(min = 3))]
+    pub login: String,
+    #[validate(length(min = 3))]
+    pub password: String,
+}
 
 impl Customer {
     async fn insert(&self, pool: &sqlx::Pool<sqlx::Postgres>) -> Result<u64, sqlx::Error> {

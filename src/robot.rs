@@ -2,10 +2,22 @@ use axum::http::StatusCode;
 use chrono::Utc;
 use sqlx::postgres::PgPool;
 use validator::Validate;
+use serde::{Deserialize, Serialize};
+use validator_derive::Validate;
 
 use crate::constants::DATABASE_URL;
 use crate::db::Database;
-pub use crate::structures::Robot;
+use crate::db::validate_model_version;
+
+#[derive(Debug, Deserialize, Serialize, Validate)]
+pub struct Robot {
+    #[validate(length(min = 1, max = 5))]
+    pub serial: String,
+    #[validate(custom = "validate_model_version")]
+    pub model: String,
+    #[validate(custom = "validate_model_version")]
+    pub version: String,
+}
 
 impl Robot {
     pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {

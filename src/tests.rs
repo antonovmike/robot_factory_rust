@@ -1,5 +1,5 @@
 use super::*;
-use crate::structures::Robot;
+use crate::robot::Robot;
 
 use axum::{
     http,
