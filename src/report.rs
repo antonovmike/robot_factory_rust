@@ -79,34 +79,29 @@ fn write_data(
 }
 
 pub async fn report_handler() -> std::result::Result<impl IntoResponse, (StatusCode, String)> {
-    match tokio::task::spawn(create_xlsx()).await {
-        Ok(result) => result.map_err(|err| {
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                format!("Failed to create Excel file: {}", err),
-            )
-        }),
+    match create_xlsx().await {
+        Ok(()) => {
+            let file = File::open(PATH_TO_XLSX).await.map_err(|err| {
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    format!("File not found: {}", err),
+                )
+            })?;
+            let stream = ReaderStream::new(file);
+            let body = StreamBody::new(stream);
+            let mut headers = HeaderMap::new();
+            headers.insert(
+                CONTENT_TYPE,
+                HeaderValue::from_static(
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ),
+            );
+
+            Ok((headers, body))
+        }
         Err(err) => Err((
             StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Failed to run blocking task: {}", err),
+            format!("Failed to create Excel file: {}", err),
         )),
-    }?;
-
-    let file = File::open(PATH_TO_XLSX).await.map_err(|err| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("File not found: {}", err),
-        )
-    })?;
-    let stream = ReaderStream::new(file);
-    let body = StreamBody::new(stream);
-    let mut headers = HeaderMap::new();
-    headers.insert(
-        CONTENT_TYPE,
-        HeaderValue::from_static(
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        ),
-    );
-
-    Ok((headers, body))
+    }
 }
