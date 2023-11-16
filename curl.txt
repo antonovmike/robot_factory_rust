@@ -2,11 +2,11 @@ DOWNLOAD WEEKLY REPORT
 w3m http://127.0.0.1:8000/robots/report
 
 CREATE
-curl -X POST -H "Content-Type: application/json" -d '{"serial":"0","model":"H9","version":"B9"}' http://127.0.0.1:8000/robots/create
+curl -X POST -H "Content-Type: application/json" -d '{"serial":"T1","model":"T0","version":"T0"}' http://127.0.0.1:8000/robots/create
 ORDER
 curl -X POST -H "Content-Type: application/json" -d '{"login": "kurmanjan_1", "password": "pass2", "model": "B9", "version": "B9"}' http://127.0.0.1:8000/robots/order
 REMOVE
-curl -X POST -H "Content-Type: application/json" -d '{"serial":"C2007","model":"C2","version":"B7"}' http://127.0.0.1:8000/robots/remove
+curl -X POST -H "Content-Type: application/json" -d '{"serial":"H9003","model":"H9","version":"Y9"}' http://127.0.0.1:8000/robots/remove
 
 CREATE USER
 curl -X POST -H "Content-Type: application/json" -d '{"name":"Kurmanjan Datka", "email":"kurmanjan@mail.com", "login":"kurmanjan_1", "password":"pass2"}' http://localhost:8000/user/create

@@ -10,8 +10,8 @@ use chrono::Utc;
 use sqlx::postgres::PgPool;
 
 #[tokio::test]
-async fn test_create_robot_valid() {
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+async fn test_create_robot_valid() -> anyhow::Result<()> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
 
@@ -23,11 +23,13 @@ async fn test_create_robot_valid() {
 
     let res = client.post("/robots/create").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::CREATED);
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_create_robot_invalid_serial() {
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+async fn test_create_robot_invalid_serial() -> anyhow::Result<()> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
 
@@ -39,11 +41,13 @@ async fn test_create_robot_invalid_serial() {
 
     let res = client.post("/robots/create").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_create_robot_invalid_model() {
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+async fn test_create_robot_invalid_model() -> anyhow::Result<()> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
 
@@ -55,11 +59,13 @@ async fn test_create_robot_invalid_model() {
 
     let res = client.post("/robots/create").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_report_handler_success() {
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+async fn test_report_handler_success() -> anyhow::Result<()> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
     // Send a GET request to the report_handler
@@ -68,7 +74,7 @@ async fn test_report_handler_success() {
     assert_eq!(res.status(), StatusCode::OK);
     // The response type should be application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
     assert_eq!(
-        res.headers().get(CONTENT_TYPE).unwrap().to_str().unwrap(),
+        res.headers().get(CONTENT_TYPE).unwrap().to_str()?,
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
 
@@ -77,11 +83,13 @@ async fn test_report_handler_success() {
     // Excel files start with bytes PK\x03\x04
     let body = res.bytes().await;
     assert!(body.starts_with(b"PK\x03\x04"));
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_remove_robot_valid() {
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+async fn test_remove_robot_valid() -> anyhow::Result<()> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
 
@@ -93,7 +101,7 @@ async fn test_remove_robot_valid() {
     };
 
     // Add robot to Database
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let current_date = Utc::now().to_rfc3339();
     let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
     sqlx::query(&statement)
@@ -101,16 +109,17 @@ async fn test_remove_robot_valid() {
         .bind(&robot.model)
         .bind(&robot.version)
         .execute(&pool)
-        .await
-        .unwrap();
+        .await?;
 
     let res = client.post("/robots/remove").json(&robot).send().await;
     assert_eq!(res.status(), StatusCode::OK);
+
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_remove_robot_not_found() {
-    let pool = PgPool::connect(DATABASE_URL).await.unwrap();
+async fn test_remove_robot_not_found() -> anyhow::Result<()> {
+    let pool = PgPool::connect(DATABASE_URL).await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
 
@@ -126,4 +135,6 @@ async fn test_remove_robot_not_found() {
         .send()
         .await;
     assert_eq!(res.status(), StatusCode::NOT_FOUND);
+
+    Ok(())
 }

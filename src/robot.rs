@@ -41,7 +41,7 @@ impl Robot {
     pub async fn create_robot(&self) -> Result<StatusCode, StatusCode> {
         self.validate_robot()?;
         println!("create_robot");
-        let db = Database::new().await.unwrap();
+        let db = Database::new().await?;
         let pool = db.pool;
 
         let serial_number = if self.serial == "0" {
@@ -78,7 +78,7 @@ impl Robot {
     pub async fn remove_robot(&self) -> Result<StatusCode, StatusCode> {
         self.validate_robot()?;
 
-        let db = Database::new().await.unwrap();
+        let db = Database::new().await?;
         let pool = db.pool;
 
         let statement = ("DELETE FROM robots WHERE serial = $1").to_string();
