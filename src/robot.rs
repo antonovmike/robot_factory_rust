@@ -19,7 +19,6 @@ pub struct Robot {
 
 impl Robot {
     pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
-        // let pool = PgPool::connect(DATABASE_URL).await?;
         let pool = get_pool().await?;
 
         println!("generate serial {model:?}");

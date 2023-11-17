@@ -7,8 +7,7 @@ use http::header::CONTENT_TYPE;
 use axum::http::StatusCode;
 use axum_test_helper::TestClient;
 use chrono::Utc;
-use lettre::transport::smtp::extension::Extension;
-use sqlx::postgres::PgPool;
+// use lettre::transport::smtp::extension::Extension;
 
 #[tokio::test]
 async fn test_create_robot_valid() -> anyhow::Result<()> {
@@ -90,7 +89,6 @@ async fn test_report_handler_success() -> anyhow::Result<()> {
 
 #[tokio::test]
 async fn test_remove_robot_valid() -> anyhow::Result<()> {
-    // let pool = PgPool::connect(DATABASE_URL).await?;
     let pool = get_pool().await?;
     let app = create_router(pool);
     let client = TestClient::new(app);
@@ -103,7 +101,6 @@ async fn test_remove_robot_valid() -> anyhow::Result<()> {
     };
 
     // Add robot to Database
-    // let pool = PgPool::connect(DATABASE_URL).await?;
     let pool = get_pool().await?;
     let current_date = Utc::now().to_rfc3339();
     let statement = format!("INSERT INTO robots (serial, model, version, created) VALUES ($1, $2, $3, '{current_date}')");
