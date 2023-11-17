@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 use axum::extract::Extension;
 use axum::{
@@ -44,32 +44,32 @@ async fn main() -> anyhow::Result<()> {
 
 pub fn create_router(pool: Arc<PgPool>) -> Router<()> {
     let router: Router = Router::new()
-    .route("/robots/report", get(report_handler))
-    .route(
-        "/robots/create",
-        post(move |Json(robot_data): Json<Robot>| async move {
-            let robot = Robot {
-                serial: robot_data.serial,
-                model: robot_data.model,
-                version: robot_data.version,
-            };
-            robot.create_robot().await
-        }),
-    )
-    .route(
-        "/robots/remove",
-        post(move |Json(robot_data): Json<Robot>| async move {
-            let robot = Robot {
-                serial: robot_data.serial,
-                model: robot_data.model,
-                version: robot_data.version,
-            };
-            robot.remove_robot().await
-        }),
-    )
-    .route("/robots/order", post(order_robot))
-    .route("/user/create", post(create_customer))
-    .layer(Extension(pool));
+        .route("/robots/report", get(report_handler))
+        .route(
+            "/robots/create",
+            post(move |Json(robot_data): Json<Robot>| async move {
+                let robot = Robot {
+                    serial: robot_data.serial,
+                    model: robot_data.model,
+                    version: robot_data.version,
+                };
+                robot.create_robot().await
+            }),
+        )
+        .route(
+            "/robots/remove",
+            post(move |Json(robot_data): Json<Robot>| async move {
+                let robot = Robot {
+                    serial: robot_data.serial,
+                    model: robot_data.model,
+                    version: robot_data.version,
+                };
+                robot.remove_robot().await
+            }),
+        )
+        .route("/robots/order", post(order_robot))
+        .route("/user/create", post(create_customer))
+        .layer(Extension(pool));
 
     router
 }
