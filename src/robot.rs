@@ -1,13 +1,11 @@
 use axum::http::StatusCode;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::PgPool;
 use validator::Validate;
 use validator_derive::Validate;
 
-use crate::constants::DATABASE_URL;
-use crate::db::validate_model_version;
-use crate::db::Database;
+use crate::db::{Database, validate_model_version};
+use crate::db_pool::get_pool;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct Robot {
@@ -21,10 +19,12 @@ pub struct Robot {
 
 impl Robot {
     pub async fn generate_serial_number(model: &str) -> Result<String, sqlx::Error> {
-        let pool = PgPool::connect(DATABASE_URL).await?;
+        // let pool = PgPool::connect(DATABASE_URL).await?;
+        let pool = get_pool().await?;
+
         println!("generate serial {model:?}");
         let sql = "SELECT COUNT(*) as count FROM robots WHERE model = $1";
-        let max_serial: Option<i64> = sqlx::query_scalar(sql).bind(model).fetch_one(&pool).await?;
+        let max_serial: Option<i64> = sqlx::query_scalar(sql).bind(model).fetch_one(&*pool).await?;
         let new_serial = format!("{}{:03}", model, max_serial.unwrap_or(0) + 1);
 
         Ok(new_serial)
@@ -78,8 +78,7 @@ impl Robot {
     pub async fn remove_robot(&self) -> Result<StatusCode, StatusCode> {
         self.validate_robot()?;
 
-        let db = Database::new().await?;
-        let pool = db.pool;
+        let pool = get_pool().await.unwrap();
 
         let statement = ("DELETE FROM robots WHERE serial = $1").to_string();
 
@@ -87,7 +86,7 @@ impl Robot {
             .bind(&self.serial)
             .bind(&self.model)
             .bind(&self.version)
-            .execute(&pool)
+            .execute(&*pool)
             .await
         {
             Ok(result) => {

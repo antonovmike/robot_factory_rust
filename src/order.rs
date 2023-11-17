@@ -2,7 +2,7 @@ use anyhow::Result;
 use axum::http::StatusCode;
 use chrono::Utc;
 
-use crate::db::Database;
+use crate::db_pool::get_pool;
 
 pub struct Order {
     pub customer_name: String,
@@ -15,8 +15,7 @@ impl Order {
         customer_name: String,
         robot_model: String,
     ) -> Result<StatusCode, StatusCode> {
-        let db = Database::new().await.unwrap();
-        let pool = db.pool;
+        let pool = get_pool().await.unwrap();
 
         let order_date = Utc::now().to_rfc3339();
 
@@ -28,7 +27,7 @@ impl Order {
         match sqlx::query(&statement)
             .bind(&customer_name)
             .bind(&robot_model)
-            .execute(&pool)
+            .execute(&*pool)
             .await
         {
             Ok(result) => {

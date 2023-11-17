@@ -9,14 +9,15 @@ use rust_xlsxwriter::{Workbook, Worksheet, XlsxError};
 use tokio::fs::File;
 use tokio_util::io::ReaderStream;
 
-use crate::constants::{DATABASE_URL, PATH_TO_XLSX, SHEET_HEADERS};
+use crate::constants::{PATH_TO_XLSX, SHEET_HEADERS};
+use crate::db_pool::get_pool;
 
 async fn create_xlsx() -> std::result::Result<(), anyhow::Error> {
     if fs::metadata(PATH_TO_XLSX).is_ok() {
         fs::remove_file(PATH_TO_XLSX)?;
     }
 
-    let pool = sqlx::PgPool::connect(DATABASE_URL).await?;
+    let pool = get_pool().await.unwrap();
     let robots = fetch_robots(&pool).await?;
 
     let groups = robots

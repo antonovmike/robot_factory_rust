@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::net::SocketAddr;
 
 use axum::extract::Extension;
@@ -13,14 +14,15 @@ mod tests;
 
 mod constants;
 mod db;
+mod db_pool;
 mod order;
 mod processing;
 mod report;
 mod robot;
 mod user;
 
-use constants::DATABASE_URL;
-use db::Database;
+use crate::db::Database;
+use crate::db_pool::get_pool;
 use processing::order_robot;
 use report::report_handler;
 use robot::Robot;
@@ -30,7 +32,7 @@ use user::create_customer;
 async fn main() -> anyhow::Result<()> {
     amount_of_robots().await?;
 
-    let pool = PgPool::connect(DATABASE_URL).await?;
+    let pool = get_pool().await?;
     let app = create_router(pool);
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 8000));
@@ -40,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-pub fn create_router(pool: PgPool) -> Router<()> {
+pub fn create_router(pool: Arc<PgPool>) -> Router<()> {
     let router: Router = Router::new()
     .route("/robots/report", get(report_handler))
     .route(
