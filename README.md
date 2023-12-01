@@ -1,6 +1,6 @@
 # R4C - Robots for consumers
 
-[Python version](https://github.com/antonovmike/R4C/tree/task_3)
+[Python version](https://github.com/antonovmike/robot_factory_python/tree/sqlite_to_postgres)
 
 ## Небольшая предыстория.
 Давным-давно, в далёкой-далёкой галактике, была компания производящая различных 
